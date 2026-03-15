@@ -1,9 +1,4 @@
-mod config;
-mod error;
-mod exif;
-mod naming;
-mod processor;
-mod watcher;
+use syno_media_organizer::{config, watcher};
 
 use anyhow::Result;
 use clap::Parser;
