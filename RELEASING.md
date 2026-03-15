@@ -36,7 +36,7 @@ This script:
 ### 3. Push
 
 ```bash
-git push origin main --tags
+git push origin master --tags
 ```
 
 ### 4. GitHub Actions takes over

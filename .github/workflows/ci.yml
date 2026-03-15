@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags-ignore: ['v*']   # Tags are handled by release.yml
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   check:

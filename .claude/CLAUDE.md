@@ -104,7 +104,7 @@ cargo test --lib        # fast unit tests
 # Stage atomically
 git add -p
 git commit              # pre-commit hook runs automatically
-git push origin main
+git push origin master
 ```
 
 ### Activate git hooks (once)
@@ -126,7 +126,7 @@ cargo test              # unit + integration
 # 2. Run the release script:
 bash scripts/release.sh X.Y.Z
 # 3. Push:
-git push origin main --tags
+git push origin master --tags
 # GitHub Actions creates the release automatically.
 ```
 

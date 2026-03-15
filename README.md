@@ -115,7 +115,7 @@ bash scripts/build-spk.sh   # build the .spk package
 # 1. Update CHANGELOG.md
 # 2. Run:
 bash scripts/release.sh X.Y.Z
-git push origin main --tags
+git push origin master --tags
 ```
 
 GitHub Actions will cross-compile, package the `.spk`, and publish the release.

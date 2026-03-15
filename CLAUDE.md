@@ -15,6 +15,6 @@ src/watcher.rs    notify watcher (500ms debounce) + SIGTERM
 
 **Cross-compile**: `bash scripts/setup-cross.sh` once, then `cargo build --release --target armv7-unknown-linux-gnueabihf`
 
-**Release**: `bash scripts/release.sh X.Y.Z` then `git push origin main --tags`
+**Release**: `bash scripts/release.sh X.Y.Z` then `git push origin master --tags`
 
 **Git hooks**: `git config core.hooksPath .githooks`
