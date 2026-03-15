@@ -56,11 +56,6 @@ fn main() -> Result<()> {
 
     let cfg = config::load(&cli.config)?;
 
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(2)
-        .build_global()
-        .unwrap_or_else(|e| tracing::warn!("Could not set thread pool size: {}", e));
-
     watcher::run(cfg, cli.dry_run)?;
 
     Ok(())

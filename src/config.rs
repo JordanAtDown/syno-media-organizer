@@ -32,6 +32,10 @@ fn default_true() -> bool {
     true
 }
 
+fn default_poll_interval() -> u64 {
+    30
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FolderConfig {
     /// Source folder to watch
@@ -59,6 +63,9 @@ pub struct FolderConfig {
 pub struct Config {
     #[serde(rename = "folders")]
     pub folders: Vec<FolderConfig>,
+    /// How often to scan input folders, in seconds (default: 30)
+    #[serde(default = "default_poll_interval")]
+    pub poll_interval_secs: u64,
 }
 
 pub fn load(path: &Path) -> Result<Config, ConfigError> {

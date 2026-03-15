@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.17] - 2026-03-15
+
+### Fixed
+- Startup panic on DSM kernels where `CLOCK_BOOTTIME` returns `EINVAL`: replaced `notify`
+  (inotify-based file watcher, depends on `crossbeam-channel` which calls `Instant::now()`)
+  and `rayon` (thread-pool init calls `Instant::now()` via crossbeam) with a simple polling
+  loop using `walkdir` + `thread::sleep` — no `Instant` anywhere in the critical path
+
+### Changed
+- Watcher is now a polling loop: scans input folders every `poll_interval_secs` seconds
+  (default: 30) instead of reacting to inotify events
+- Only files with `mtime` newer than the previous scan are processed, preventing
+  re-processing of existing files in `move_files = false` (copy) mode
+- On first startup all pre-existing files in input folders are processed (catch-up)
+- New config option `poll_interval_secs` (global, default `30`) to tune scan frequency
+
+### Removed
+- Dependencies: `notify`, `rayon` (both caused `CLOCK_BOOTTIME` panics via crossbeam)
+
+---
+
 ## [0.1.16] - 2026-03-15
 
 ### Fixed

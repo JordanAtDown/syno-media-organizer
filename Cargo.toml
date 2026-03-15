@@ -1,13 +1,12 @@
 [package]
 name = "syno-media-organizer"
-version = "0.1.16"
+version = "0.1.17"
 edition = "2021"
 description = "Automatically organize photos and videos by EXIF date on Synology NAS"
 license = "MIT"
 repository = "https://github.com/JordanAtDown/syno-media-organizer"
 
 [dependencies]
-notify = "6"
 kamadak-exif = "0.5"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
@@ -18,7 +17,6 @@ thiserror = "1"
 anyhow = "1"
 walkdir = "2"
 clap = { version = "4", features = ["derive"] }
-rayon = "1"
 ctrlc = { version = "3", features = ["termination"] }
 
 [dev-dependencies]

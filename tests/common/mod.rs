@@ -34,9 +34,9 @@ pub fn create_jpeg_with_exif(dir: &Path, name: &str, date: DateTime<Local>) -> P
     exif_ifd.extend_from_slice(&[0x08, 0x00, 0x00, 0x00]); // IFD offset = 8
     exif_ifd.extend_from_slice(&[0x01, 0x00]); // 1 IFD entry
 
-    // Tag 0x9003 = DateTimeOriginal, type 2 = ASCII
+    // Tag 0x0132 = DateTime (IFD0 tag, readable by kamadak-exif without an ExifIFD)
     let value_offset = (8u32 + 2 + 12 + 4).to_le_bytes();
-    exif_ifd.extend_from_slice(&[0x03, 0x90]); // tag LE
+    exif_ifd.extend_from_slice(&[0x32, 0x01]); // tag LE
     exif_ifd.extend_from_slice(&[0x02, 0x00]); // ASCII
     exif_ifd.extend_from_slice(&count.to_le_bytes());
     exif_ifd.extend_from_slice(&value_offset);

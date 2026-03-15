@@ -1,6 +1,9 @@
 # syno-media-organizer configuration
 # Edit this file and restart the service after any change.
 
+# How often to scan input folders for new files, in seconds (default: 30)
+# poll_interval_secs = 30
+
 [[folders]]
 input    = "/volume1/inbox/camera"
 output   = "/volume1/Phototheque"

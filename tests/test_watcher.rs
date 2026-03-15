@@ -19,6 +19,7 @@ fn single_folder_config(input: std::path::PathBuf, output: std::path::PathBuf) -
             on_conflict: OnConflict::Rename,
             extensions: vec!["jpg".to_string()],
         }],
+        poll_interval_secs: 1,
     }
 }
 
@@ -38,14 +39,17 @@ fn test_watcher_detects_and_processes_file() {
 
     let handle = std::thread::spawn(move || run_with_shutdown(cfg, false, Some(shutdown_watcher)));
 
-    // Allow watcher initialisation
-    std::thread::sleep(Duration::from_millis(300));
+    // Allow watcher to complete its first scan before we drop the file.
+    // The first scan runs immediately with last_scan = UNIX_EPOCH, so any
+    // file dropped before it completes would be caught on that first pass.
+    // We wait just enough for the scan to finish and last_scan to be updated.
+    std::thread::sleep(Duration::from_millis(200));
 
     // Drop a file into the watched folder
     create_jpeg_without_exif(&input_path, "watch_test.jpg");
 
-    // Allow debounce + processing (500 ms debounce + some slack)
-    std::thread::sleep(Duration::from_millis(1500));
+    // Wait for one full poll cycle (1 s) plus processing slack
+    std::thread::sleep(Duration::from_millis(2500));
 
     // Signal shutdown and wait
     shutdown.store(true, Ordering::SeqCst);
