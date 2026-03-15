@@ -3,6 +3,26 @@
 # Activate with: git config core.hooksPath .githooks
 set -euo pipefail
 
+# Cargo may not be in PATH when running from Git Bash on Windows.
+# Try common locations before giving up.
+if ! command -v cargo &>/dev/null; then
+    for candidate in \
+        "$HOME/.cargo/bin/cargo" \
+        "/usr/local/cargo/bin/cargo" \
+        "/root/.cargo/bin/cargo"; do
+        if [ -x "$candidate" ]; then
+            export PATH="$(dirname "$candidate"):$PATH"
+            break
+        fi
+    done
+fi
+
+if ! command -v cargo &>/dev/null; then
+    echo "[pre-commit] WARNING: cargo not found in PATH — skipping Rust checks."
+    echo "[pre-commit] Install Rust (https://rustup.rs) or run checks manually in WSL."
+    exit 0
+fi
+
 echo "[pre-commit] Checking format..."
 cargo fmt --check
 
