@@ -26,3 +26,6 @@ Thumbs.db
 
 # Env
 .env
+
+# Claude Code local overrides (machine-specific, not shared)
+.claude/settings.local.json
