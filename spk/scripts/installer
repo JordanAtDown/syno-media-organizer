@@ -29,8 +29,4 @@ preuninst() {
     exit 0
 }
 
-case "$1" in
-    postinst)   postinst ;;
-    preuninst)  preuninst ;;
-    *)          exit 0 ;;
-esac
+$1

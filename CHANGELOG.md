@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.13] - 2026-03-15
+
+### Fixed
+- Reverted `case "$1"` dispatch back to raw `$1` in installer — case statement caused
+  "échec de l'installation" on DSM 7.1.1 Update 9 for unknown reasons
+- Removed `startable="yes"` from INFO — suspected to cause install failure on this DSM version
+  (identical INFO to v0.1.8 which was the last confirmed working install)
+
+---
+
 ## [0.1.12] - 2026-03-15
 
 ### Fixed
