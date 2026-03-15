@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.6] - 2026-03-15
+
+### Fixed
+- "Format de fichier non valide" at install: installer script used wrong DSM argument
+  names (`pre-install`/`post-install`) instead of DSM 7 convention (`preinst`/`postinst`)
+- Added `.gitattributes` to enforce LF line endings for shell scripts and SPK metadata
+
+---
+
 ## [0.1.5] - 2026-03-15
 
 ### Fixed

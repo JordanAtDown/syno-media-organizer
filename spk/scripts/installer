@@ -38,12 +38,12 @@ postuninst() {
 }
 
 case "$1" in
-    pre-install)    preinst ;;
-    post-install)   postinst ;;
-    pre-uninstall)  preuninst ;;
-    post-uninstall) postuninst ;;
+    preinst)        preinst ;;
+    postinst)       postinst ;;
+    preuninst)      preuninst ;;
+    postuninst)     postuninst ;;
     *)
-        echo "Usage: $0 {pre-install|post-install|pre-uninstall|post-uninstall}"
+        echo "Usage: $0 {preinst|postinst|preuninst|postuninst}"
         exit 1
         ;;
 esac

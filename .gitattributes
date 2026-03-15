@@ -1,0 +1,12 @@
+# Enforce LF for shell scripts and SPK metadata (DSM requires Unix line endings)
+*.sh          text eol=lf
+spk/scripts/* text eol=lf
+spk/INFO      text eol=lf
+*.toml        text eol=lf
+*.md          text eol=lf
+*.rs          text eol=lf
+*.json        text eol=lf
+
+# Binary files
+*.png  binary
+*.spk  binary
