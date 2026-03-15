@@ -28,13 +28,18 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Install ARM cross-compiler
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+
+      - name: Install cargo-zigbuild and ARM strip
         run: |
-          sudo apt-get update -qq
+          cargo install cargo-zigbuild --locked
           sudo apt-get install -y gcc-arm-linux-gnueabihf
 
-      - name: Cross-compile for ARMv7 (musl static)
-        run: cargo build --release --target armv7-unknown-linux-musleabihf
+      - name: Cross-compile for ARMv7 musl (static)
+        run: cargo zigbuild --release --target armv7-unknown-linux-musleabihf
 
       - name: Build SPK package
         run: bash scripts/build-spk.sh

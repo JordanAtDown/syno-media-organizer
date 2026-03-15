@@ -39,13 +39,21 @@ jobs:
       - name: Unit tests
         run: cargo test --lib
 
-      - name: Install ARM cross-compiler
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y gcc-arm-linux-gnueabihf
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
 
-      - name: Cross-compile for ARMv7 (musl static)
-        run: cargo build --release --target armv7-unknown-linux-musleabihf
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild --locked
+
+      - name: Cross-compile for ARMv7 musl (static)
+        run: cargo zigbuild --release --target armv7-unknown-linux-musleabihf
+
+      - name: Verify binary is statically linked
+        run: |
+          file target/armv7-unknown-linux-musleabihf/release/syno-media-organizer
+          ! file target/armv7-unknown-linux-musleabihf/release/syno-media-organizer | grep -q "dynamically linked"
 
       - name: Upload ARM binary artifact
         uses: actions/upload-artifact@v4

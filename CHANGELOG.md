@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.16] - 2026-03-15
+
+### Fixed
+- Binary is now truly statically linked (no GLIBC dependency): switched cross-compiler from
+  `arm-linux-gnueabihf-gcc` (glibc toolchain, produced glibc-linked binary despite musl target)
+  to `cargo-zigbuild` + zig (correct musl static linking)
+- CI now verifies the binary is statically linked before packaging
+
+### Changed
+- `scripts/setup-cross.sh`: installs zig + cargo-zigbuild instead of musl.cc toolchain
+- CI and Release workflows: use `cargo zigbuild` for cross-compilation
+
+---
+
 ## [0.1.15] - 2026-03-15
 
 ### Fixed
