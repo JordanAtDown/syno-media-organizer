@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.2] - 2026-03-15
+
+### Fixed
+- SPK rejected with "incompatible platform": changed `arch` from generic `armv7` to Synology platform identifier `armada38x` (Marvell Armada 385 — DS216play, DS216j, DS116, DS216+II)
+
+---
+
 ## [0.1.1] - 2026-03-15
 
 ### Fixed
