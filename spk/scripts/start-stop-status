@@ -7,8 +7,8 @@ INSTALL_DIR="/var/packages/${PACKAGE}/target"
 BINARY="${INSTALL_DIR}/bin/${PACKAGE}"
 CONFIG_DIR="/var/packages/${PACKAGE}/etc"
 CONFIG="${CONFIG_DIR}/config.toml"
-PID_FILE="/var/run/${PACKAGE}.pid"
-LOG_FILE="/var/log/${PACKAGE}.log"
+PID_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.pid"
+LOG_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.log"
 
 start_daemon() {
     if [ -f "${PID_FILE}" ] && kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then

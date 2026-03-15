@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.4] - 2026-03-15
+
+### Fixed
+- DSM 7 blocks install with "runs with root privileges": added `conf/privilege` file declaring `run-as: package` (dedicated non-root user)
+- PID file and log file moved from root-only `/var/run/` and `/var/log/` to `/var/packages/.../var/` (writable by package user)
+- Installer now creates the `var/` runtime directory on post-install
+
+### Changed
+- README: clarified compatible models — DS215play and DS214play (monaco platform) should work; DS216/DS116 (armada38x) are not compatible
+
+---
+
 ## [0.1.3] - 2026-03-15
 
 ### Fixed

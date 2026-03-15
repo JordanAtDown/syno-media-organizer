@@ -50,9 +50,11 @@ cp "${ROOT}/spk/INFO" "${BUNDLE_DIR}/INFO"
 echo "checksum=\"${CHECKSUM}\"" >> "${BUNDLE_DIR}/INFO"
 cp "${ROOT}/spk/package.tgz" "${BUNDLE_DIR}/package.tgz"
 cp -r "${ROOT}/spk/scripts" "${BUNDLE_DIR}/scripts"
+mkdir -p "${BUNDLE_DIR}/conf"
+cp "${ROOT}/spk/conf/privilege" "${BUNDLE_DIR}/conf/privilege"
 
 cd "${BUNDLE_DIR}"
-tar cf "${SPK_PATH}" INFO package.tgz scripts/
+tar cf "${SPK_PATH}" INFO package.tgz scripts/ conf/
 rm -rf "${BUNDLE_DIR}"
 
 rm -f "${ROOT}/spk/package.tgz"

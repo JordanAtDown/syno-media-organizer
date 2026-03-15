@@ -49,7 +49,8 @@ inotify event
 | DSM version | **7.0 minimum** (tested on DSM 7.1.1) |
 | RAM | 512 MB minimum |
 
-> Other ARMv7 Synology models should work but are not tested.
+> Other monaco-platform models (DS215play, DS214play) should also work.
+> Models with a different SoC (DS216, DS116 — armada38x platform) are **not** compatible with this package.
 
 ---
 
