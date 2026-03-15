@@ -8,7 +8,7 @@ spk/package.tgz
 *.spk
 
 # Runtime config (user creates their own from config.example.toml)
-config.toml
+/config.toml
 
 # OS
 .DS_Store
