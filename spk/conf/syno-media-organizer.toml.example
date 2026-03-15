@@ -1,0 +1,18 @@
+# syno-media-organizer configuration
+# Edit this file and restart the service after any change.
+
+[[folders]]
+input    = "/volume1/inbox/camera"
+output   = "/volume1/Phototheque"
+pattern  = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+recursive  = true
+move_files = true
+on_conflict = "rename"
+extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
+
+# [[folders]]
+# input    = "/volume1/inbox/phone"
+# output   = "/volume1/Phototheque"
+# move_files = false
+# on_conflict = "skip"
+# extensions = ["jpg", "jpeg", "heic", "mp4"]

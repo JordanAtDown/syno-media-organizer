@@ -1,0 +1,76 @@
+#!/bin/sh
+# DSM start/stop/status script for syno-media-organizer
+# Placed in spk/scripts/ and invoked by DSM Package Center.
+
+PACKAGE="syno-media-organizer"
+INSTALL_DIR="/var/packages/${PACKAGE}/target"
+BINARY="${INSTALL_DIR}/bin/${PACKAGE}"
+CONFIG_DIR="/var/packages/${PACKAGE}/etc"
+CONFIG="${CONFIG_DIR}/config.toml"
+PID_FILE="/var/run/${PACKAGE}.pid"
+LOG_FILE="/var/log/${PACKAGE}.log"
+
+start_daemon() {
+    if [ -f "${PID_FILE}" ] && kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then
+        echo "${PACKAGE} is already running (pid=$(cat "${PID_FILE}"))"
+        return 0
+    fi
+
+    if [ ! -f "${BINARY}" ]; then
+        echo "Binary not found: ${BINARY}" >&2
+        return 1
+    fi
+
+    if [ ! -f "${CONFIG}" ]; then
+        echo "Config not found: ${CONFIG}" >&2
+        echo "Copy ${CONFIG_DIR}/config.toml.example to ${CONFIG} and edit it."
+        return 1
+    fi
+
+    "${BINARY}" --config "${CONFIG}" --log-format json >> "${LOG_FILE}" 2>&1 &
+    echo $! > "${PID_FILE}"
+    echo "${PACKAGE} started (pid=$(cat "${PID_FILE}"))"
+}
+
+stop_daemon() {
+    if [ ! -f "${PID_FILE}" ]; then
+        echo "${PACKAGE} is not running"
+        return 0
+    fi
+
+    PID="$(cat "${PID_FILE}")"
+    if kill -0 "${PID}" 2>/dev/null; then
+        kill -TERM "${PID}"
+        # Wait up to 10 seconds for graceful shutdown
+        for i in $(seq 1 10); do
+            kill -0 "${PID}" 2>/dev/null || break
+            sleep 1
+        done
+        # Force kill if still alive
+        kill -0 "${PID}" 2>/dev/null && kill -KILL "${PID}"
+    fi
+
+    rm -f "${PID_FILE}"
+    echo "${PACKAGE} stopped"
+}
+
+status_daemon() {
+    if [ -f "${PID_FILE}" ] && kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then
+        echo "${PACKAGE} is running (pid=$(cat "${PID_FILE}"))"
+        return 0
+    else
+        echo "${PACKAGE} is not running"
+        return 1
+    fi
+}
+
+case "$1" in
+    start)   start_daemon ;;
+    stop)    stop_daemon ;;
+    status)  status_daemon ;;
+    restart) stop_daemon && start_daemon ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac

@@ -1,0 +1,46 @@
+#!/bin/sh
+# DSM installer script — called by Package Center during install/uninstall.
+
+PACKAGE="syno-media-organizer"
+CONFIG_DIR="/var/packages/${PACKAGE}/etc"
+EXAMPLE="${CONFIG_DIR}/config.toml.example"
+CONFIG="${CONFIG_DIR}/config.toml"
+
+preinst() {
+    exit 0
+}
+
+postinst() {
+    # Create config directory with correct permissions
+    mkdir -p "${CONFIG_DIR}"
+    chmod 750 "${CONFIG_DIR}"
+
+    # Copy example config if no config exists yet
+    if [ ! -f "${CONFIG}" ] && [ -f "${EXAMPLE}" ]; then
+        cp "${EXAMPLE}" "${CONFIG}"
+        echo "Default config installed at ${CONFIG} — please edit before starting the service."
+    fi
+
+    exit 0
+}
+
+preuninst() {
+    # Stop service before uninstalling
+    /var/packages/${PACKAGE}/scripts/start-stop-status stop || true
+    exit 0
+}
+
+postuninst() {
+    exit 0
+}
+
+case "$1" in
+    pre-install)    preinst ;;
+    post-install)   postinst ;;
+    pre-uninstall)  preuninst ;;
+    post-uninstall) postuninst ;;
+    *)
+        echo "Usage: $0 {pre-install|post-install|pre-uninstall|post-uninstall}"
+        exit 1
+        ;;
+esac
