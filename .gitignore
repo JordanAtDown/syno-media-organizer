@@ -1,0 +1,9 @@
+/target/
+/dist/
+Cargo.lock
+*.spk
+*.swp
+*.swo
+.DS_Store
+config.toml
+spk/package/
