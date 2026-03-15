@@ -1,6 +1,6 @@
 [package]
 name = "syno-media-organizer"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Automatically organize photos and videos by EXIF date on Synology NAS"
 license = "MIT"
