@@ -808,13 +808,14 @@ dependencies = [
 
 [[package]]
 name = "syno-media-organizer"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
  "ctrlc",
  "kamadak-exif",
+ "libc",
  "rstest",
  "serde",
  "tempfile",
