@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags-ignore: ['v*']   # Tags are handled by release.yml
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Lint, test & cross-compile
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: armv7-unknown-linux-gnueabihf
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Unit tests
+        run: cargo test --lib
+
+      - name: Install ARM cross-compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
+
+      - name: Configure ARM linker
+        run: |
+          mkdir -p .cargo
+          cat >> .cargo/config.toml << 'EOF'
+          [target.armv7-unknown-linux-gnueabihf]
+          linker = "arm-linux-gnueabihf-gcc"
+          EOF
+
+      - name: Cross-compile for ARMv7
+        run: cargo build --release --target armv7-unknown-linux-gnueabihf
+
+      - name: Upload ARM binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: syno-media-organizer-armv7
+          path: target/armv7-unknown-linux-gnueabihf/release/syno-media-organizer
+          retention-days: 7
