@@ -7,10 +7,6 @@ CONFIG="${CONFIG_DIR}/config.toml"
 EXAMPLE="/var/packages/${PACKAGE}/target/conf/${PACKAGE}.toml.example"
 OLD_CONFIG="/var/packages/${PACKAGE}/etc/config.toml"
 
-preinst() {
-    exit 0
-}
-
 postinst() {
     mkdir -p "${CONFIG_DIR}"
     mkdir -p "/var/packages/${PACKAGE}/var"
@@ -18,7 +14,7 @@ postinst() {
     # Migrate config from old location (upgrade from <= v0.1.4)
     if [ ! -f "${CONFIG}" ] && [ -f "${OLD_CONFIG}" ]; then
         mv "${OLD_CONFIG}" "${CONFIG}"
-        echo "Config migrated from ${OLD_CONFIG} to ${CONFIG}"
+        echo "Config migrated to ${CONFIG}"
     elif [ ! -f "${CONFIG}" ] && [ -f "${EXAMPLE}" ]; then
         cp "${EXAMPLE}" "${CONFIG}"
         echo "Default config installed at ${CONFIG} — please edit before starting the service."
@@ -33,17 +29,4 @@ preuninst() {
     exit 0
 }
 
-postuninst() {
-    exit 0
-}
-
-case "$1" in
-    preinst)        preinst ;;
-    postinst)       postinst ;;
-    preuninst)      preuninst ;;
-    postuninst)     postuninst ;;
-    *)
-        echo "Usage: $0 {preinst|postinst|preuninst|postuninst}"
-        exit 1
-        ;;
-esac
+$1

@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.7] - 2026-03-15
+
+### Fixed
+- Reverted SPK bundle to v0.1.4 structure: removed `thirdparty="yes"` and package icons
+  which caused "format de fichier non valide" on DSM 7.1.1
+- Reverted installer to simple `$1` dispatch style (matches v0.1.4 working baseline)
+
+### Changed
+- Package is now startable/stoppable from Package Center (`startable="yes"`)
+
+---
+
 ## [0.1.6] - 2026-03-15
 
 ### Fixed
