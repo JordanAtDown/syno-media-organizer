@@ -1,9 +1,28 @@
+# Build outputs
 /target/
 /dist/
-Cargo.lock
+
+# SPK staging
+spk/package/
+spk/package.tgz
 *.spk
+
+# Runtime config (user creates their own from config.example.toml)
+config.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
 *.swp
 *.swo
-.DS_Store
-config.toml
-spk/package/
+*.orig
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env
+.env
