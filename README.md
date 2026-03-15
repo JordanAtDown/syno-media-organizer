@@ -1,5 +1,9 @@
 # syno-media-organizer
 
+<p align="center">
+  <img src="spk/PACKAGE_ICON_256.PNG" alt="Syno Media Organizer" width="128"/>
+</p>
+
 [![CI](https://github.com/JordanAtDown/syno-media-organizer/actions/workflows/ci.yml/badge.svg)](https://github.com/JordanAtDown/syno-media-organizer/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/JordanAtDown/syno-media-organizer)](https://github.com/JordanAtDown/syno-media-organizer/releases)
 

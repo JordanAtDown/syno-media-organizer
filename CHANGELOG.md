@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.11] - 2026-03-15
+
+### Added
+- Package icons: `PACKAGE_ICON.PNG` (72×72) and `PACKAGE_ICON_256.PNG` (256×256)
+  displayed in DSM Package Center (no `thirdparty="yes"` needed)
+- README: logo displayed at top of page
+
+---
+
 ## [0.1.10] - 2026-03-15
 
 ### Fixed
