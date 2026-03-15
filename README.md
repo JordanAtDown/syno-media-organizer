@@ -17,22 +17,22 @@ CPU and memory footprint. Runs as a native Synology SPK service.
 
 ## Features
 
-- Watches one or more input folders (inotify, 500ms debounce)
+- Polls one or more input folders every N seconds (default: 30s, configurable)
 - Reads EXIF `DateTimeOriginal` → `DateTimeDigitized` → `DateTime` → mtime fallback
 - Moves or copies files to `output/YYYY/MM/` according to a configurable pattern
 - Handles filename conflicts: `rename`, `skip`, or `overwrite`
 - Structured JSON logging compatible with DSM log center
 - Graceful shutdown on SIGTERM (DSM stop command)
-- Thread pool capped at 2 to protect the NAS
+- Statically linked (musl) — no GLIBC dependency, works on any DSM kernel
 
 ---
 
 ## Architecture
 
 ```
-inotify event
+every poll_interval_secs (default: 30s)
      │
-  watcher (debounce 500ms)
+  watcher (scan new files by mtime)
      │
   processor
      ├── validate extension
@@ -80,6 +80,9 @@ inotify event
 ## Configuration
 
 ```toml
+# Scan interval in seconds (optional, default: 30)
+poll_interval_secs = 30
+
 [[folders]]
 input      = "/volume1/inbox/camera"
 output     = "/volume1/Phototheque"
@@ -128,7 +131,7 @@ cargo fmt
 cargo clippy -- -D warnings
 cargo test --lib            # unit tests
 cargo test                  # all tests (unit + integration)
-cargo build --release --target armv7-unknown-linux-gnueabihf
+cargo zigbuild --release --target armv7-unknown-linux-musleabihf
 bash scripts/build-spk.sh   # build the .spk package
 ```
 
