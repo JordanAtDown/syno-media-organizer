@@ -52,8 +52,8 @@ cp "${ROOT}/spk/package.tgz" "${BUNDLE_DIR}/package.tgz"
 cp -r "${ROOT}/spk/scripts" "${BUNDLE_DIR}/scripts"
 mkdir -p "${BUNDLE_DIR}/conf"
 cp "${ROOT}/spk/conf/privilege" "${BUNDLE_DIR}/conf/privilege"
-cp "${ROOT}/spk/PACKAGE_ICON.PNG" "${BUNDLE_DIR}/PACKAGE_ICON.PNG"
-cp "${ROOT}/spk/PACKAGE_ICON_256.PNG" "${BUNDLE_DIR}/PACKAGE_ICON_256.PNG"
+cp "${ROOT}/spk/PACKAGE_ICON.png" "${BUNDLE_DIR}/PACKAGE_ICON.PNG"
+cp "${ROOT}/spk/PACKAGE_ICON_256.png" "${BUNDLE_DIR}/PACKAGE_ICON_256.PNG"
 
 cd "${BUNDLE_DIR}"
 tar cf "${SPK_PATH}" INFO package.tgz scripts/ conf/ PACKAGE_ICON.PNG PACKAGE_ICON_256.PNG

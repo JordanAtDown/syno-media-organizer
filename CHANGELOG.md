@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.12] - 2026-03-15
+
+### Fixed
+- Fix CI build failure: `build-spk.sh` referenced `PACKAGE_ICON.PNG` (uppercase) but git
+  stores the icons as `PACKAGE_ICON.png` (lowercase) — Linux CI is case-sensitive
+
+---
+
 ## [0.1.11] - 2026-03-15
 
 ### Added
