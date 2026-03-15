@@ -3,7 +3,7 @@
 # Run this script from WSL Ubuntu 24 inside the project root.
 set -euo pipefail
 
-TARGET="armv7-unknown-linux-gnueabihf"
+TARGET="armv7-unknown-linux-musleabihf"
 PACKAGE="syno-media-organizer"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -19,7 +19,7 @@ cargo build --release --target "${TARGET}" --manifest-path "${ROOT}/Cargo.toml"
 
 # 2. Strip the binary
 BINARY="${ROOT}/target/${TARGET}/release/${PACKAGE}"
-arm-linux-gnueabihf-strip "${BINARY}"
+arm-linux-musleabihf-strip "${BINARY}"
 echo "    Binary size after strip: $(du -sh "${BINARY}" | cut -f1)"
 
 # 3. Prepare SPK staging directory

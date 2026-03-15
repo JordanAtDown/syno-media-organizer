@@ -23,6 +23,10 @@ postinst() {
     exit 0
 }
 
+postreplace() {
+    postinst
+}
+
 preuninst() {
     # Stop service before uninstalling
     /var/packages/${PACKAGE}/scripts/start-stop-status stop || true

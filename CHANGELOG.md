@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.14] - 2026-03-15
+
+### Fixed
+- Switch cross-compilation target to `armv7-unknown-linux-musleabihf` (musl static) — binary
+  no longer depends on system GLIBC; fixes startup crash on DSM 7.1.1 (`GLIBC_2.28 not found`)
+- Installer: add `postreplace()` as alias for `postinst()` — DSM calls `postreplace` on
+  reinstall/replace operations, causing config directory and file to never be created
+
+### Changed
+- `scripts/setup-cross.sh`: downloads musl.cc ARM toolchain instead of apt glibc toolchain
+- CI and Release workflows: use musl ARM cross-compiler from musl.cc
+
+---
+
 ## [0.1.13] - 2026-03-15
 
 ### Fixed
