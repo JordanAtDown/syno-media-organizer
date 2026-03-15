@@ -5,8 +5,7 @@
 PACKAGE="syno-media-organizer"
 INSTALL_DIR="/var/packages/${PACKAGE}/target"
 BINARY="${INSTALL_DIR}/bin/${PACKAGE}"
-CONFIG_DIR="/var/packages/${PACKAGE}/etc"
-CONFIG="${CONFIG_DIR}/config.toml"
+CONFIG="/volume1/config/${PACKAGE}/config.toml"
 PID_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.pid"
 LOG_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.log"
 
@@ -23,7 +22,7 @@ start_daemon() {
 
     if [ ! -f "${CONFIG}" ]; then
         echo "Config not found: ${CONFIG}" >&2
-        echo "Copy ${CONFIG_DIR}/config.toml.example to ${CONFIG} and edit it."
+        echo "Edit /volume1/config/${PACKAGE}/config.toml before starting."
         return 1
     fi
 

@@ -58,12 +58,18 @@ inotify event
 
 1. Download the latest `.spk` from [Releases](https://github.com/JordanAtDown/syno-media-organizer/releases)
 2. In DSM: **Package Center → Manual Install** → select the `.spk` file
-3. Edit the config file at `/var/packages/syno-media-organizer/etc/config.toml`
-4. Start the service from Package Center or:
+3. **Edit the config** via File Station:
+   - Open **File Station** → shared folder `config` → `syno-media-organizer` → `config.toml`
+   - Right-click → **Open with Text Editor** (install the free Text Editor package if needed)
+   - Or via SSH: `vi /volume1/config/syno-media-organizer/config.toml`
+4. **Start the service** from **Package Center → Syno Media Organizer → Run**
+5. **Check logs** (SSH):
+   ```sh
+   tail -f /var/packages/syno-media-organizer/var/syno-media-organizer.log
+   ```
 
-```sh
-/var/packages/syno-media-organizer/scripts/start-stop-status start
-```
+> **Upgrading**: existing `config.toml` is automatically migrated and preserved.
+> **Uninstall**: Package Center → Syno Media Organizer → Uninstall
 
 ---
 

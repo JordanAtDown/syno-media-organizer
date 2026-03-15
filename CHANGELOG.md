@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.5] - 2026-03-15
+
+### Fixed
+- Package not visible in Package Center: added `startable="yes"` and `thirdparty="yes"` to INFO
+- Added package icons (PACKAGE_ICON.PNG 72×72 and PACKAGE_ICON_256.PNG 256×256)
+
+### Changed
+- Config file moved from `/var/packages/.../etc/` to `/volume1/config/syno-media-organizer/config.toml` — editable via File Station without SSH
+- Installer migrates existing config from old location on upgrade
+- README: updated installation instructions with File Station config editing steps
+
+---
+
 ## [0.1.4] - 2026-03-15
 
 ### Fixed
