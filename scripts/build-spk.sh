@@ -19,7 +19,7 @@ cargo build --release --target "${TARGET}" --manifest-path "${ROOT}/Cargo.toml"
 
 # 2. Strip the binary
 BINARY="${ROOT}/target/${TARGET}/release/${PACKAGE}"
-arm-linux-musleabihf-strip "${BINARY}"
+arm-linux-gnueabihf-strip "${BINARY}"
 echo "    Binary size after strip: $(du -sh "${BINARY}" | cut -f1)"
 
 # 3. Prepare SPK staging directory

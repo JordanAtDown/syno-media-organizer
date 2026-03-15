@@ -39,11 +39,10 @@ jobs:
       - name: Unit tests
         run: cargo test --lib
 
-      - name: Install musl ARM cross-compiler
+      - name: Install ARM cross-compiler
         run: |
-          wget -q https://musl.cc/arm-linux-musleabihf-cross.tgz
-          sudo tar xzf arm-linux-musleabihf-cross.tgz -C /usr/local
-          echo "/usr/local/arm-linux-musleabihf-cross/bin" >> $GITHUB_PATH
+          sudo apt-get update -qq
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
 
       - name: Cross-compile for ARMv7 (musl static)
         run: cargo build --release --target armv7-unknown-linux-musleabihf
