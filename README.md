@@ -45,7 +45,7 @@ inotify event
 
 | Requirement | Value |
 |-------------|-------|
-| NAS architecture | ARMv7l (DS216play, DS216, DS116, …) |
+| NAS architecture | DS216play (STM Monaco STiH412 — ARMv7l) |
 | DSM version | **7.0 minimum** (tested on DSM 7.1.1) |
 | RAM | 512 MB minimum |
 

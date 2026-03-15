@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] - 2026-03-15
+
+### Fixed
+- SPK rejected with "incompatible platform": DS216play uses STM Monaco STiH412 (ARMv7l), Synology platform identifier is `monaco` not `armada38x`
+- README: corrected compatible hardware to DS216play (STM Monaco STiH412)
+
+---
+
 ## [0.1.2] - 2026-03-15
 
 ### Fixed

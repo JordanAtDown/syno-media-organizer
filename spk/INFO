@@ -1,6 +1,6 @@
 package="syno-media-organizer"
 version="0.1.2"
-arch="armada38x"
+arch="monaco"
 firmware="7.0-40000"
 description="Automatically organize photos and videos by EXIF date"
 displayname="Syno Media Organizer"
