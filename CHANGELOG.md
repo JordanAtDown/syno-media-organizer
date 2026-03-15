@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.20] - 2026-03-15
+
+### Changed
+- Files are now always moved to the output folder; the `move_files` config option has been
+  removed. Moving is the only safe strategy: it guarantees EXIF metadata is fully preserved
+  (rename is a pure filesystem operation) and prevents files with old capture timestamps from
+  being silently ignored on subsequent scans.
+
+### Fixed
+- Watcher no longer ignores files whose filesystem modification time predates the last scan
+  (e.g. photos copied from a camera or phone where the original mtime is preserved). The
+  mtime-based filter has been removed entirely since moved files cannot reappear in the input
+  folder.
+
+---
+
 ## [0.1.19] - 2026-03-15
 
 ### Fixed

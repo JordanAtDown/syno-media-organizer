@@ -105,9 +105,8 @@ poll_interval_secs = 30
 [[folders]]
 input      = "/volume1/inbox/camera"
 output     = "/volume1/Phototheque"
-pattern    = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
-recursive  = true
-move_files = true
+pattern     = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+recursive   = true
 on_conflict = "rename"   # rename | skip | overwrite
 extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 ```

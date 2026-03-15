@@ -9,7 +9,6 @@ use tempfile::TempDir;
 fn make_cfg(
     input: std::path::PathBuf,
     output: std::path::PathBuf,
-    move_files: bool,
     on_conflict: OnConflict,
     extensions: Vec<String>,
 ) -> FolderConfig {
@@ -18,7 +17,6 @@ fn make_cfg(
         output,
         pattern: "{year}/{month}/{year}-{month}-{day}_{stem}{ext}".to_string(),
         recursive: false,
-        move_files,
         on_conflict,
         extensions,
     }
@@ -41,7 +39,6 @@ fn test_pipeline_jpeg(#[case] filename: &str, #[case] with_exif: bool) {
     let cfg = make_cfg(
         input.path().to_path_buf(),
         output.path().to_path_buf(),
-        true,
         OnConflict::Rename,
         vec!["jpg".to_string()],
     );
@@ -88,11 +85,10 @@ fn test_conflict_strategies(#[case] strategy: OnConflict, #[case] expected_count
     let f1 = create_jpeg_with_exif(input.path(), "photo1.jpg", date);
     let f2 = create_jpeg_with_exif(input.path(), "photo2.jpg", date);
 
-    // Pattern that ignores {stem} forces a name collision
+    // Pattern that ignores {stem} forces a name collision between f1 and f2
     let mut cfg = make_cfg(
         input.path().to_path_buf(),
         output.path().to_path_buf(),
-        false, // copy so sources remain
         strategy,
         vec!["jpg".to_string()],
     );
@@ -119,7 +115,6 @@ fn test_pipeline_mp4_stub() {
     let cfg = make_cfg(
         input.path().to_path_buf(),
         output.path().to_path_buf(),
-        true,
         OnConflict::Rename,
         vec!["mp4".to_string()],
     );
@@ -144,7 +139,6 @@ fn test_dry_run_no_side_effects() {
     let cfg = make_cfg(
         input.path().to_path_buf(),
         output.path().to_path_buf(),
-        true,
         OnConflict::Rename,
         vec!["jpg".to_string()],
     );

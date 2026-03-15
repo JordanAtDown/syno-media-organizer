@@ -15,7 +15,6 @@ fn single_folder_config(input: std::path::PathBuf, output: std::path::PathBuf) -
             output,
             pattern: "{year}/{month}/{stem}{ext}".to_string(),
             recursive: false,
-            move_files: true,
             on_conflict: OnConflict::Rename,
             extensions: vec!["jpg".to_string()],
         }],

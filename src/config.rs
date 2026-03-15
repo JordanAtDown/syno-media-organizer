@@ -48,9 +48,6 @@ pub struct FolderConfig {
     /// Watch subdirectories recursively
     #[serde(default = "default_true")]
     pub recursive: bool,
-    /// Move files (true) or copy them (false)
-    #[serde(default = "default_true")]
-    pub move_files: bool,
     /// What to do when destination file already exists
     #[serde(default)]
     pub on_conflict: OnConflict,
@@ -121,7 +118,6 @@ output = "/volume1/photos"
         assert_eq!(cfg.folders.len(), 1);
         assert_eq!(cfg.folders[0].input, PathBuf::from("/volume1/inbox"));
         assert_eq!(cfg.folders[0].output, PathBuf::from("/volume1/photos"));
-        assert!(cfg.folders[0].move_files);
         assert!(cfg.folders[0].recursive);
         assert_eq!(cfg.folders[0].on_conflict, OnConflict::Rename);
     }
@@ -145,7 +141,6 @@ recursive = false
         );
         let cfg = load(f.path()).unwrap();
         assert_eq!(cfg.folders.len(), 2);
-        assert!(!cfg.folders[0].move_files);
         assert_eq!(cfg.folders[0].on_conflict, OnConflict::Skip);
         assert!(!cfg.folders[1].recursive);
     }

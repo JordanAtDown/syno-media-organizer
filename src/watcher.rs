@@ -10,11 +10,8 @@ use walkdir::WalkDir;
 /// Start watching all configured folders and process incoming files.
 ///
 /// Scans each input folder every `config.poll_interval_secs` seconds.
-/// Only files whose `mtime` is newer than the previous scan are processed,
-/// which prevents re-processing files in `move_files = false` (copy) mode.
-///
-/// On the very first scan `last_scan = UNIX_EPOCH`, so all pre-existing files
-/// are processed — useful for catching up after the daemon was stopped.
+/// All files present in the input folder are processed on each scan; since files
+/// are always moved to the output, they cannot reappear on the next cycle.
 ///
 /// Blocks until the `shutdown` flag is set or SIGTERM / SIGINT is received.
 pub fn run(config: Config, dry_run: bool) -> Result<(), WatcherError> {
@@ -37,7 +34,6 @@ pub fn run_with_shutdown(
     });
 
     let interval = Duration::from_secs(config.poll_interval_secs);
-    let mut last_scan = SystemTime::UNIX_EPOCH;
 
     info!(
         interval_secs = config.poll_interval_secs,
@@ -46,17 +42,13 @@ pub fn run_with_shutdown(
     );
 
     while !shutdown.load(Ordering::SeqCst) {
-        let scan_start = SystemTime::now();
-
         for folder in &config.folders {
-            match scan_folder(folder, last_scan, dry_run) {
+            match scan_folder(folder, dry_run) {
                 Ok(0) => {}
                 Ok(n) => info!(path = %folder.input.display(), files = n, "processed files"),
                 Err(e) => error!(path = %folder.input.display(), error = %e, "scan error"),
             }
         }
-
-        last_scan = scan_start;
 
         // Sleep in 1-second slices so we react to shutdown within ~1 s
         // without blocking for the full interval.
@@ -74,14 +66,10 @@ pub fn run_with_shutdown(
     Ok(())
 }
 
-/// Scan one input folder and process every file newer than `since`.
+/// Scan one input folder and process all files found.
 ///
 /// Returns the number of files successfully processed.
-fn scan_folder(
-    folder: &crate::config::FolderConfig,
-    since: SystemTime,
-    dry_run: bool,
-) -> Result<usize, WatcherError> {
+fn scan_folder(folder: &crate::config::FolderConfig, dry_run: bool) -> Result<usize, WatcherError> {
     let max_depth = if folder.recursive { usize::MAX } else { 1 };
     let mut processed = 0;
 
@@ -91,16 +79,6 @@ fn scan_folder(
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
     {
-        let mtime = entry
-            .metadata()
-            .ok()
-            .and_then(|m| m.modified().ok())
-            .unwrap_or(SystemTime::UNIX_EPOCH);
-
-        if mtime <= since {
-            continue;
-        }
-
         debug!(path = %entry.path().display(), "found new file");
 
         match processor::process_file(entry.path(), folder, dry_run) {
