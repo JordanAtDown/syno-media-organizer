@@ -1,6 +1,7 @@
 use crate::config::FolderConfig;
 use crate::error::ProcessorError;
 use crate::{exif, naming};
+use naming::is_video;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
@@ -36,7 +37,13 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
         .map(|e| format!(".{}", e))
         .unwrap_or_default();
 
-    let relative = naming::apply_pattern(&cfg.pattern, &date, stem, &ext, None, 0);
+    let prefix = if is_video(&ext_lower) {
+        cfg.video_prefix.as_str()
+    } else {
+        cfg.photo_prefix.as_str()
+    };
+
+    let relative = naming::apply_pattern(&cfg.pattern, &date, stem, &ext, None, 0, prefix);
     let dest_path = cfg.output.join(&relative);
 
     // 4. Resolve conflicts
@@ -97,6 +104,8 @@ mod tests {
             output,
             pattern: "{year}/{month}/{stem}{ext}".to_string(),
             recursive: false,
+            photo_prefix: String::new(),
+            video_prefix: String::new(),
             on_conflict,
             extensions: vec!["jpg".to_string(), "mp4".to_string()],
         }

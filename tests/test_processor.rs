@@ -17,6 +17,8 @@ fn make_cfg(
         output,
         pattern: "{year}/{month}/{year}-{month}-{day}_{stem}{ext}".to_string(),
         recursive: false,
+        photo_prefix: String::new(),
+        video_prefix: String::new(),
         on_conflict,
         extensions,
     }

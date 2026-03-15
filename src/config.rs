@@ -36,6 +36,10 @@ fn default_poll_interval() -> u64 {
     30
 }
 
+fn default_empty_string() -> String {
+    String::new()
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FolderConfig {
     /// Source folder to watch
@@ -48,6 +52,12 @@ pub struct FolderConfig {
     /// Watch subdirectories recursively
     #[serde(default = "default_true")]
     pub recursive: bool,
+    /// Prefix prepended to `{prefix}` token for photo files (default: "")
+    #[serde(default = "default_empty_string")]
+    pub photo_prefix: String,
+    /// Prefix prepended to `{prefix}` token for video files (default: "")
+    #[serde(default = "default_empty_string")]
+    pub video_prefix: String,
     /// What to do when destination file already exists
     #[serde(default)]
     pub on_conflict: OnConflict,

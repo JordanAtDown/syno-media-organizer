@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 /// - `{ext}`     — extension with leading dot (e.g. `.jpg`)
 /// - `{camera}`  — camera model from EXIF, or "unknown"
 /// - `{counter}` — zero-padded 4-digit counter for disambiguation
+/// - `{prefix}`  — configurable prefix depending on media type (photo_prefix or video_prefix)
 pub fn apply_pattern(
     pattern: &str,
     date: &DateTime<Local>,
@@ -23,6 +24,7 @@ pub fn apply_pattern(
     ext: &str,
     camera: Option<&str>,
     counter: u32,
+    prefix: &str,
 ) -> String {
     pattern
         .replace("{year}", &date.format("%Y").to_string())
@@ -35,6 +37,17 @@ pub fn apply_pattern(
         .replace("{ext}", ext)
         .replace("{camera}", camera.unwrap_or("unknown"))
         .replace("{counter}", &format!("{:04}", counter))
+        .replace("{prefix}", prefix)
+}
+
+/// Known video file extensions used to select `video_prefix` vs `photo_prefix`.
+const VIDEO_EXTENSIONS: &[&str] = &[
+    "mp4", "mov", "avi", "mkv", "3gp", "m4v", "wmv", "flv", "webm", "ts", "mts", "m2ts",
+];
+
+/// Return true if the lowercase extension (without dot) is a known video format.
+pub fn is_video(ext_lower: &str) -> bool {
+    VIDEO_EXTENSIONS.contains(&ext_lower)
 }
 
 /// Resolve a destination path according to conflict strategy.
@@ -146,7 +159,7 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(
-            apply_pattern(pattern, &date, stem, ext, camera, counter),
+            apply_pattern(pattern, &date, stem, ext, camera, counter, ""),
             expected
         );
     }
@@ -154,8 +167,31 @@ mod tests {
     #[test]
     fn test_apply_pattern_no_camera_token_uses_unknown() {
         let d = date(2024, 1, 1, 0, 0, 0);
-        let result = apply_pattern("{camera}", &d, "f", ".jpg", None, 0);
+        let result = apply_pattern("{camera}", &d, "f", ".jpg", None, 0, "");
         assert_eq!(result, "unknown");
+    }
+
+    #[test]
+    fn test_apply_pattern_prefix_photo() {
+        let d = date(2024, 6, 1, 0, 0, 0);
+        let result = apply_pattern("{prefix}{stem}{ext}", &d, "clip", ".jpg", None, 0, "IMG_");
+        assert_eq!(result, "IMG_clip.jpg");
+    }
+
+    #[test]
+    fn test_apply_pattern_prefix_video() {
+        let d = date(2024, 6, 1, 0, 0, 0);
+        let result = apply_pattern("{prefix}{stem}{ext}", &d, "clip", ".mp4", None, 0, "VID_");
+        assert_eq!(result, "VID_clip.mp4");
+    }
+
+    #[test]
+    fn test_is_video() {
+        assert!(is_video("mp4"));
+        assert!(is_video("mov"));
+        assert!(is_video("mkv"));
+        assert!(!is_video("jpg"));
+        assert!(!is_video("heic"));
     }
 
     #[test]

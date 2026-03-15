@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.21] - 2026-03-15
+
+### Added
+- New pattern token `{prefix}`: resolves to `photo_prefix` for image files and `video_prefix`
+  for video files, making it easy to distinguish photos from videos in the output folder.
+- New per-folder config options `photo_prefix` (default: `""`) and `video_prefix` (default: `""`):
+  configure the string substituted for `{prefix}` based on the file's media type.
+  Video extensions: mp4, mov, avi, mkv, 3gp, m4v, wmv, flv, webm, ts, mts, m2ts.
+  All other allowed extensions are treated as photos.
+
+---
+
 ## [0.1.20] - 2026-03-15
 
 ### Changed

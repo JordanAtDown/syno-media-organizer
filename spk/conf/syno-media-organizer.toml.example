@@ -5,12 +5,14 @@
 # poll_interval_secs = 30
 
 [[folders]]
-input    = "/volume1/inbox/camera"
-output   = "/volume1/Phototheque"
-pattern  = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
-recursive   = true
-on_conflict = "rename"
-extensions  = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
+input        = "/volume1/inbox/camera"
+output       = "/volume1/Phototheque"
+pattern      = "{year}/{month}/{prefix}{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+recursive    = true
+photo_prefix = "IMG_"
+video_prefix = "VID_"
+on_conflict  = "rename"
+extensions   = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 
 # [[folders]]
 # input    = "/volume1/inbox/phone"

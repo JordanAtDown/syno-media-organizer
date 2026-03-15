@@ -103,12 +103,14 @@ the tool reads from or writes to.
 poll_interval_secs = 30
 
 [[folders]]
-input      = "/volume1/inbox/camera"
-output     = "/volume1/Phototheque"
-pattern     = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
-recursive   = true
-on_conflict = "rename"   # rename | skip | overwrite
-extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
+input        = "/volume1/inbox/camera"
+output       = "/volume1/Phototheque"
+pattern      = "{year}/{month}/{prefix}{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+recursive    = true
+photo_prefix = "IMG_"   # optional, default: ""
+video_prefix = "VID_"   # optional, default: ""
+on_conflict  = "rename"   # rename | skip | overwrite
+extensions   = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 ```
 
 ### Pattern tokens
@@ -125,6 +127,7 @@ extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 | `{ext}` | Extension with dot (`.jpg`) |
 | `{camera}` | Camera model from EXIF (or `unknown`) |
 | `{counter}` | Auto-increment counter (0001, 0002, …) |
+| `{prefix}` | `photo_prefix` for photos, `video_prefix` for videos (default: `""`) |
 
 ---
 
