@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.9] - 2026-03-15
+
+### Fixed
+- Installer script now uses `case "$1"` dispatch instead of raw `$1` function call:
+  unknown arguments (e.g. DSM lifecycle hooks not handled) now exit 0 gracefully instead of
+  "command not found" which caused DSM to block uninstall with error 299
+
+### Changed
+- Re-added `startable="yes"` to INFO — package can now be started/stopped from Package Center
+
+---
+
 ## [0.1.8] - 2026-03-15
 
 ### Changed
