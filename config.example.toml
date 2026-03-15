@@ -1,0 +1,52 @@
+# syno-media-organizer configuration example
+# Copy this file to /etc/syno-media-organizer/config.toml and adjust paths.
+
+# Each [[folders]] block defines one watched input folder.
+# You can define as many as needed.
+
+[[folders]]
+# Folder to watch for new files (inotify)
+input = "/volume1/inbox/camera"
+
+# Root destination folder — files will be placed in output/YYYY/MM/
+output = "/volume1/Phototheque"
+
+# Naming pattern tokens:
+#   {year}    — 4-digit year  (2024)
+#   {month}   — 2-digit month (01-12)
+#   {day}     — 2-digit day   (01-31)
+#   {hour}    — 2-digit hour  (00-23)
+#   {min}     — 2-digit minute
+#   {sec}     — 2-digit second
+#   {stem}    — original filename without extension
+#   {ext}     — file extension with dot (.jpg)
+#   {camera}  — camera model from EXIF (or "unknown")
+#   {counter} — auto-increment counter to avoid conflicts
+pattern = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+
+# Watch sub-folders recursively (default: true)
+recursive = true
+
+# Move files instead of copying (default: true)
+# Set to false to keep originals in the input folder
+move_files = true
+
+# What to do when a file with the same name already exists at the destination:
+#   rename    — append _1, _2, ... until unique (default)
+#   skip      — leave the source file untouched
+#   overwrite — replace the existing file
+on_conflict = "rename"
+
+# Allowed file extensions (lowercase, without dot)
+# Only files matching these extensions will be processed
+extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
+
+
+# Second folder example — phone photos, copy only, no recursion
+[[folders]]
+input = "/volume1/inbox/phone"
+output = "/volume1/Phototheque"
+recursive = false
+move_files = false
+on_conflict = "skip"
+extensions = ["jpg", "jpeg", "heic", "mp4"]
