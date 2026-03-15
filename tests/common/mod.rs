@@ -20,33 +20,54 @@ pub fn create_jpeg_without_exif(dir: &Path, name: &str) -> PathBuf {
     path
 }
 
-/// Create a minimal JPEG WITH EXIF embedding `DateTimeOriginal`.
+/// Create a minimal JPEG WITH EXIF embedding `DateTimeOriginal` (tag 0x9003, in ExifIFD).
 pub fn create_jpeg_with_exif(dir: &Path, name: &str, date: DateTime<Local>) -> PathBuf {
     let path = dir.join(name);
     let date_str = date.format("%Y:%m:%d %H:%M:%S").to_string();
-    let date_bytes = date_str.as_bytes();
-    let count = (date_bytes.len() + 1) as u32;
+    let date_bytes = date_str.as_bytes(); // 19 bytes
+    let date_count = (date_bytes.len() + 1) as u32; // 20 (including null terminator)
 
-    // Minimal TIFF/EXIF block (little-endian)
-    let mut exif_ifd: Vec<u8> = Vec::new();
-    exif_ifd.extend_from_slice(b"II"); // LE byte order
-    exif_ifd.extend_from_slice(&[0x2A, 0x00]); // TIFF magic
-    exif_ifd.extend_from_slice(&[0x08, 0x00, 0x00, 0x00]); // IFD offset = 8
-    exif_ifd.extend_from_slice(&[0x01, 0x00]); // 1 IFD entry
+    // TIFF layout (little-endian):
+    //   offset  0: TIFF header (8 bytes) — "II", 0x002A, IFD0 offset=8
+    //   offset  8: IFD0 — 1 entry: ExifIFD pointer (tag 0x8769)
+    //              2 (count) + 12 (entry) + 4 (next IFD) = 18 bytes → ends at 26
+    //   offset 26: ExifIFD — 1 entry: DateTimeOriginal (tag 0x9003)
+    //              2 + 12 + 4 = 18 bytes → ends at 44
+    //   offset 44: DateTimeOriginal ASCII string
 
-    // Tag 0x0132 = DateTime (IFD0 tag, readable by kamadak-exif without an ExifIFD)
-    let value_offset = (8u32 + 2 + 12 + 4).to_le_bytes();
-    exif_ifd.extend_from_slice(&[0x32, 0x01]); // tag LE
-    exif_ifd.extend_from_slice(&[0x02, 0x00]); // ASCII
-    exif_ifd.extend_from_slice(&count.to_le_bytes());
-    exif_ifd.extend_from_slice(&value_offset);
-    exif_ifd.extend_from_slice(&[0x00, 0x00, 0x00, 0x00]); // next IFD = null
-    exif_ifd.extend_from_slice(date_bytes);
-    exif_ifd.push(0x00); // null terminator
+    let exif_ifd_offset: u32 = 26;
+    let date_value_offset: u32 = 44;
+
+    let mut tiff: Vec<u8> = Vec::new();
+
+    // TIFF header
+    tiff.extend_from_slice(b"II"); // little-endian
+    tiff.extend_from_slice(&[0x2A, 0x00]); // TIFF magic
+    tiff.extend_from_slice(&8u32.to_le_bytes()); // IFD0 at offset 8
+
+    // IFD0: 1 entry — ExifIFD pointer (tag 0x8769, type LONG=4, count=1, value=ExifIFD offset)
+    tiff.extend_from_slice(&1u16.to_le_bytes()); // entry count
+    tiff.extend_from_slice(&[0x69, 0x87]); // tag 0x8769 LE
+    tiff.extend_from_slice(&[0x04, 0x00]); // type LONG
+    tiff.extend_from_slice(&1u32.to_le_bytes()); // count
+    tiff.extend_from_slice(&exif_ifd_offset.to_le_bytes()); // value = ExifIFD offset
+    tiff.extend_from_slice(&0u32.to_le_bytes()); // next IFD = null
+
+    // ExifIFD: 1 entry — DateTimeOriginal (tag 0x9003, type ASCII=2)
+    tiff.extend_from_slice(&1u16.to_le_bytes()); // entry count
+    tiff.extend_from_slice(&[0x03, 0x90]); // tag 0x9003 LE
+    tiff.extend_from_slice(&[0x02, 0x00]); // type ASCII
+    tiff.extend_from_slice(&date_count.to_le_bytes()); // count (20)
+    tiff.extend_from_slice(&date_value_offset.to_le_bytes()); // value offset
+    tiff.extend_from_slice(&0u32.to_le_bytes()); // next IFD = null
+
+    // DateTimeOriginal value
+    tiff.extend_from_slice(date_bytes);
+    tiff.push(0x00); // null terminator
 
     let mut app1_body: Vec<u8> = Vec::new();
     app1_body.extend_from_slice(b"Exif\x00\x00");
-    app1_body.extend_from_slice(&exif_ifd);
+    app1_body.extend_from_slice(&tiff);
 
     let app1_len = (app1_body.len() + 2) as u16;
 

@@ -4,47 +4,31 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-/// Read the capture date from a file's EXIF metadata.
-/// Falls back to the file's last-modification time if no EXIF date is found.
+/// Read the capture date from a file's EXIF DateTimeOriginal tag.
+/// Returns `ExifError::NoDateTimeOriginal` if the tag is absent or unreadable.
 pub fn read_date(path: &Path) -> Result<DateTime<Local>, ExifError> {
-    match read_exif_date(path) {
-        Ok(Some(dt)) => Ok(dt),
-        Ok(None) => read_mtime(path),
-        Err(_) => read_mtime(path),
-    }
-}
-
-fn read_exif_date(path: &Path) -> Result<Option<DateTime<Local>>, ExifError> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
 
     let exif_reader = exif::Reader::new();
-    let exif = match exif_reader.read_from_container(&mut reader) {
-        Ok(e) => e,
-        Err(_) => return Ok(None),
-    };
+    let exif = exif_reader
+        .read_from_container(&mut reader)
+        .map_err(|_| ExifError::NoDateTimeOriginal)?;
 
-    // Priority: DateTimeOriginal > DateTimeDigitized > DateTime
-    let tag_priority = [
-        exif::Tag::DateTimeOriginal,
-        exif::Tag::DateTimeDigitized,
-        exif::Tag::DateTime,
-    ];
+    let field = exif
+        .get_field(exif::Tag::DateTimeOriginal, exif::In::PRIMARY)
+        .ok_or(ExifError::NoDateTimeOriginal)?;
 
-    for tag in &tag_priority {
-        if let Some(field) = exif.get_field(*tag, exif::In::PRIMARY) {
-            if let exif::Value::Ascii(ref vec) = field.value {
-                if let Some(bytes) = vec.first() {
-                    let s = String::from_utf8_lossy(bytes);
-                    if let Some(dt) = parse_exif_datetime(&s) {
-                        return Ok(Some(dt));
-                    }
-                }
+    if let exif::Value::Ascii(ref vec) = field.value {
+        if let Some(bytes) = vec.first() {
+            let s = String::from_utf8_lossy(bytes);
+            if let Some(dt) = parse_exif_datetime(&s) {
+                return Ok(dt);
             }
         }
     }
 
-    Ok(None)
+    Err(ExifError::NoDateTimeOriginal)
 }
 
 /// Parse EXIF datetime string "YYYY:MM:DD HH:MM:SS" into a DateTime<Local>.
@@ -76,12 +60,6 @@ fn parse_exif_datetime(s: &str) -> Option<DateTime<Local>> {
         .single()
 }
 
-fn read_mtime(path: &Path) -> Result<DateTime<Local>, ExifError> {
-    let meta = std::fs::metadata(path)?;
-    let modified = meta.modified().map_err(ExifError::Io)?;
-    Ok(DateTime::from(modified))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,16 +87,10 @@ mod tests {
     }
 
     #[test]
-    fn test_read_date_fallback_mtime() {
-        // Create a temp file with no EXIF — should fall back to mtime
+    fn test_read_date_no_exif_returns_error() {
+        // A plain file with no EXIF should return NoDateTimeOriginal
         let tmp = tempfile::NamedTempFile::new().unwrap();
-        let dt = read_date(tmp.path()).unwrap();
-        // Mtime should be recent (within last minute)
-        let now = Local::now();
-        let diff = now.signed_duration_since(dt);
-        assert!(
-            diff.num_seconds().abs() < 60,
-            "mtime fallback should be recent"
-        );
+        let err = read_date(tmp.path()).unwrap_err();
+        assert!(matches!(err, ExifError::NoDateTimeOriginal));
     }
 }

@@ -16,8 +16,8 @@ pub enum ExifError {
     Io(#[from] std::io::Error),
     #[error("Failed to parse EXIF data: {0}")]
     Parse(String),
-    #[error("Failed to write EXIF data: {0}")]
-    Write(String),
+    #[error("No DateTimeOriginal tag found")]
+    NoDateTimeOriginal,
 }
 
 #[derive(Debug, Error)]

@@ -1,5 +1,5 @@
 use crate::config::FolderConfig;
-use crate::error::ProcessorError;
+use crate::error::{ExifError, ProcessorError};
 use crate::{exif, naming};
 use naming::is_video;
 use std::path::Path;
@@ -23,11 +23,18 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
 
     debug!(file = %path.display(), "processing file");
 
-    // 2. Read date (EXIF → mtime fallback)
-    let date = exif::read_date(path).unwrap_or_else(|e| {
-        warn!(file = %path.display(), error = %e, "EXIF read failed, using current time");
-        chrono::Local::now()
-    });
+    // 2. Read DateTimeOriginal — skip file if tag is absent
+    let date = match exif::read_date(path) {
+        Ok(dt) => dt,
+        Err(ExifError::NoDateTimeOriginal) => {
+            warn!(file = %path.display(), "skipping: no DateTimeOriginal EXIF tag");
+            return Ok(());
+        }
+        Err(e) => {
+            warn!(file = %path.display(), error = %e, "skipping: EXIF read error");
+            return Ok(());
+        }
+    };
 
     // 3. Compute destination path from pattern
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
@@ -126,7 +133,8 @@ mod tests {
     }
 
     #[test]
-    fn test_process_move_removes_source() {
+    fn test_process_no_exif_skips_file() {
+        // A stub MP4 with no EXIF DateTimeOriginal must be silently skipped
         let input = TempDir::new().unwrap();
         let output = TempDir::new().unwrap();
         let file = input.path().join("video.mp4");
@@ -139,7 +147,10 @@ mod tests {
         );
 
         process_file(&file, &cfg, false).unwrap();
-        assert!(!file.exists(), "source should be removed after move");
+        assert!(
+            file.exists(),
+            "source must not be moved when EXIF is absent"
+        );
     }
 
     #[test]
@@ -157,7 +168,6 @@ mod tests {
 
         process_file(&file, &cfg, true).unwrap();
 
-        // In dry-run: source untouched, output empty
         assert!(file.exists());
         let count = walkdir::WalkDir::new(output.path())
             .into_iter()
@@ -165,24 +175,5 @@ mod tests {
             .filter(|e| e.file_type().is_file())
             .count();
         assert_eq!(count, 0);
-    }
-
-    #[test]
-    fn test_process_skip_conflict() {
-        let input = TempDir::new().unwrap();
-        let output = TempDir::new().unwrap();
-        let file = input.path().join("photo.jpg");
-        std::fs::write(&file, b"\xFF\xD8\xFF\xD9").unwrap();
-
-        let cfg = make_cfg(
-            input.path().to_path_buf(),
-            output.path().to_path_buf(),
-            OnConflict::Skip,
-        );
-
-        // First pass — file is moved to output
-        process_file(&file, &cfg, false).unwrap();
-        // Source no longer in input, but destination exists — nothing more to do
-        assert!(!file.exists());
     }
 }

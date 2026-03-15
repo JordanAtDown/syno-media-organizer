@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.22] - 2026-03-15
+
+### Changed
+- Date extraction now requires the `DateTimeOriginal` EXIF tag exclusively.
+  Files without this tag (including MP4/MOV videos and JPEGs with no EXIF) are
+  silently skipped with a warning log. The previous fallback chain
+  (`DateTimeDigitized` → `DateTime` → mtime) has been removed to avoid
+  organizing files under an incorrect date.
+
+---
+
 ## [0.1.21] - 2026-03-15
 
 ### Added

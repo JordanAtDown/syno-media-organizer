@@ -24,19 +24,12 @@ fn make_cfg(
     }
 }
 
-#[rstest]
-#[case("with_exif.jpg", true)]
-#[case("no_exif.jpg", false)]
-fn test_pipeline_jpeg(#[case] filename: &str, #[case] with_exif: bool) {
+#[test]
+fn test_pipeline_jpeg_with_exif() {
     let input = TempDir::new().unwrap();
     let output = TempDir::new().unwrap();
     let date = make_date(2024, 3, 15, 10, 30, 0);
-
-    let file = if with_exif {
-        create_jpeg_with_exif(input.path(), filename, date)
-    } else {
-        create_jpeg_without_exif(input.path(), filename)
-    };
+    let file = create_jpeg_with_exif(input.path(), "with_exif.jpg", date);
 
     let cfg = make_cfg(
         input.path().to_path_buf(),
@@ -47,10 +40,8 @@ fn test_pipeline_jpeg(#[case] filename: &str, #[case] with_exif: bool) {
 
     process_file(&file, &cfg, false).unwrap();
 
-    // Source should be removed (move mode)
     assert!(!file.exists(), "source should be removed after move");
 
-    // Exactly one file in output
     let files: Vec<_> = walkdir::WalkDir::new(output.path())
         .into_iter()
         .filter_map(|e| e.ok())
@@ -58,21 +49,46 @@ fn test_pipeline_jpeg(#[case] filename: &str, #[case] with_exif: bool) {
         .collect();
     assert_eq!(files.len(), 1);
 
-    // For EXIF case, verify year/month in path
-    if with_exif {
-        let rel = files[0]
-            .path()
-            .strip_prefix(output.path())
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .replace('\\', "/");
-        assert!(
-            rel.starts_with("2024/03/"),
-            "expected 2024/03/ prefix, got {}",
-            rel
-        );
-    }
+    let rel = files[0]
+        .path()
+        .strip_prefix(output.path())
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .replace('\\', "/");
+    assert!(
+        rel.starts_with("2024/03/"),
+        "expected 2024/03/ prefix, got {}",
+        rel
+    );
+}
+
+#[test]
+fn test_pipeline_jpeg_no_exif_is_skipped() {
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let file = create_jpeg_without_exif(input.path(), "no_exif.jpg");
+
+    let cfg = make_cfg(
+        input.path().to_path_buf(),
+        output.path().to_path_buf(),
+        OnConflict::Rename,
+        vec!["jpg".to_string()],
+    );
+
+    process_file(&file, &cfg, false).unwrap();
+
+    // No DateTimeOriginal → file must stay in input, output must be empty
+    assert!(
+        file.exists(),
+        "source must not be moved when EXIF is absent"
+    );
+    let count = walkdir::WalkDir::new(output.path())
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .count();
+    assert_eq!(count, 0);
 }
 
 #[rstest]
@@ -109,7 +125,8 @@ fn test_conflict_strategies(#[case] strategy: OnConflict, #[case] expected_count
 }
 
 #[test]
-fn test_pipeline_mp4_stub() {
+fn test_pipeline_mp4_stub_no_exif_is_skipped() {
+    // MP4 stubs have no EXIF DateTimeOriginal → must be skipped
     let input = TempDir::new().unwrap();
     let output = TempDir::new().unwrap();
     let file = create_mp4_stub(input.path(), "clip.mp4");
@@ -123,13 +140,16 @@ fn test_pipeline_mp4_stub() {
 
     process_file(&file, &cfg, false).unwrap();
 
-    assert!(!file.exists(), "source should be removed after move");
+    assert!(
+        file.exists(),
+        "source must not be moved when EXIF is absent"
+    );
     let count = walkdir::WalkDir::new(output.path())
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .count();
-    assert_eq!(count, 1);
+    assert_eq!(count, 0);
 }
 
 #[test]

@@ -1,6 +1,6 @@
 mod common;
 
-use common::create_jpeg_without_exif;
+use common::{create_jpeg_with_exif, make_date};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -47,7 +47,11 @@ fn test_watcher_detects_and_processes_file() {
     std::thread::sleep(Duration::from_millis(200));
 
     // Drop a file into the watched folder
-    create_jpeg_without_exif(&input_path, "watch_test.jpg");
+    create_jpeg_with_exif(
+        &input_path,
+        "watch_test.jpg",
+        make_date(2024, 6, 1, 12, 0, 0),
+    );
 
     // Wait for one full poll cycle (1 s) plus processing slack
     std::thread::sleep(Duration::from_millis(2500));
