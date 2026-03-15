@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.18] - 2026-03-15
+
+### Fixed
+- Definitive fix for startup panic on DSM kernels where `CLOCK_BOOTTIME` returns `EINVAL`:
+  provide a `clock_gettime` symbol override in the musl static binary that intercepts any
+  failed `CLOCK_BOOTTIME` call and retries with `CLOCK_MONOTONIC`. This covers all callers
+  (Rust stdlib `Instant`, ctrlc, future deps) regardless of which one triggers the issue.
+
+---
+
 ## [0.1.17] - 2026-03-15
 
 ### Fixed
