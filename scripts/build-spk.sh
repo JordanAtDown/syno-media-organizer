@@ -38,14 +38,22 @@ tar czf "${ROOT}/spk/package.tgz" .
 cd "${ROOT}"
 
 # 6. Bundle into .spk (which is itself a tar archive)
+# DSM 7 requires a checksum field (MD5 of package.tgz) in INFO.
+# We assemble the SPK in a temp dir so we can inject checksum without
+# modifying the source INFO file.
 mkdir -p "${ROOT}/dist"
 SPK_PATH="${ROOT}/dist/${SPK_NAME}"
 
-cd "${ROOT}/spk"
-tar cf "${SPK_PATH}" \
-    INFO \
-    package.tgz \
-    scripts/
+CHECKSUM=$(md5sum "${ROOT}/spk/package.tgz" | cut -d' ' -f1)
+BUNDLE_DIR=$(mktemp -d)
+cp "${ROOT}/spk/INFO" "${BUNDLE_DIR}/INFO"
+echo "checksum=\"${CHECKSUM}\"" >> "${BUNDLE_DIR}/INFO"
+cp "${ROOT}/spk/package.tgz" "${BUNDLE_DIR}/package.tgz"
+cp -r "${ROOT}/spk/scripts" "${BUNDLE_DIR}/scripts"
+
+cd "${BUNDLE_DIR}"
+tar cf "${SPK_PATH}" INFO package.tgz scripts/
+rm -rf "${BUNDLE_DIR}"
 
 rm -f "${ROOT}/spk/package.tgz"
 rm -rf "${STAGE}"

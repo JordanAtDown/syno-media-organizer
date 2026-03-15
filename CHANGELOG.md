@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] - 2026-03-15
+
+### Fixed
+- SPK package rejected by DSM 7 ("invalid file format"): added required `checksum` field (MD5 of `package.tgz`) to `INFO` at build time
+- SPK scripts (`installer`, `start-stop-status`) now packaged with executable permissions
+- Updated minimum firmware to DSM 7.0 (`7.0-40000`) to match actual target platform
+
+### Changed
+- README: added Requirements section documenting supported NAS architecture and DSM version
+
+---
+
 ## [0.1.0] - 2026-03-15
 
 ### Added

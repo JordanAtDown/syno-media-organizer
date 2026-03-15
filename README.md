@@ -6,8 +6,8 @@
 Automatically organize photos and videos on a **Synology NAS** by reading EXIF
 metadata and placing files into a dated folder hierarchy (`ANNEE/MOIS`).
 
-Designed for the **DS216play** (ARMv7l, 512 MB RAM) with minimal CPU and memory
-footprint. Runs as a native Synology SPK service.
+Designed for the **DS216play** (ARMv7l, 512 MB RAM) running **DSM 7.x** with minimal
+CPU and memory footprint. Runs as a native Synology SPK service.
 
 ---
 
@@ -38,6 +38,18 @@ inotify event
      ├── create directories
      └── move or copy
 ```
+
+---
+
+## Requirements
+
+| Requirement | Value |
+|-------------|-------|
+| NAS architecture | ARMv7l (DS216play, DS216, DS116, …) |
+| DSM version | **7.0 minimum** (tested on DSM 7.1.1) |
+| RAM | 512 MB minimum |
+
+> Other ARMv7 Synology models should work but are not tested.
 
 ---
 
