@@ -10,6 +10,8 @@ PID_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.pid"
 LOG_FILE="/var/packages/${PACKAGE}/var/${PACKAGE}.log"
 
 start_daemon() {
+    mkdir -p "/var/packages/${PACKAGE}/var"
+
     if [ -f "${PID_FILE}" ] && kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then
         echo "${PACKAGE} is already running (pid=$(cat "${PID_FILE}"))"
         return 0
@@ -28,6 +30,15 @@ start_daemon() {
 
     "${BINARY}" --config "${CONFIG}" --log-format json >> "${LOG_FILE}" 2>&1 &
     echo $! > "${PID_FILE}"
+
+    # Verify process is still alive after 1s (catches immediate crashes)
+    sleep 1
+    if ! kill -0 "$(cat "${PID_FILE}")" 2>/dev/null; then
+        echo "${PACKAGE} failed to start — check ${LOG_FILE}" >&2
+        rm -f "${PID_FILE}"
+        return 1
+    fi
+
     echo "${PACKAGE} started (pid=$(cat "${PID_FILE}"))"
 }
 
@@ -67,7 +78,7 @@ case "$1" in
     start)   start_daemon ;;
     stop)    stop_daemon ;;
     status)  status_daemon ;;
-    restart) stop_daemon && start_daemon ;;
+    restart) stop_daemon; start_daemon ;;
     *)
         echo "Usage: $0 {start|stop|status|restart}"
         exit 1

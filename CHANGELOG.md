@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.10] - 2026-03-15
+
+### Fixed
+- `start-stop-status`: add `mkdir -p var/` at start of `start_daemon` — guarantees runtime
+  directory exists even when upgraded without running `postinst`
+- `start-stop-status`: replace `stop_daemon && start_daemon` with `stop_daemon; start_daemon`
+  in restart — `start_daemon` was silently skipped if `stop_daemon` returned non-zero
+- `start-stop-status`: verify process is still alive 1s after launch and report error
+  immediately if it crashed (config parse error, missing volume, etc.)
+
+---
+
 ## [0.1.9] - 2026-03-15
 
 ### Fixed
