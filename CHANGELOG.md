@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.19] - 2026-03-15
+
+### Fixed
+- Service fails to start via DSM Package Center (`synopkg start` returns error 272): the
+  package user `syno-media-organizer` had no read access to the `/volume1/config` shared folder
+  due to Synology ACL-based shared folder permissions. The installer now calls `synoacltool`
+  to grant the package user read+traverse access to `/volume1/config` and its subdirectory
+  automatically on install/upgrade.
+
+### Added
+- README: documented the required Synology shared folder permission configuration —
+  users must grant `syno-media-organizer` read+write access to every input/output shared
+  folder they configure, via DSM Panneau de configuration → Dossier partagé → Modifier → Permissions.
+
+---
+
 ## [0.1.18] - 2026-03-15
 
 ### Fixed

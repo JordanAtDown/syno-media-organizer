@@ -62,18 +62,37 @@ every poll_interval_secs (default: 30s)
 
 1. Download the latest `.spk` from [Releases](https://github.com/JordanAtDown/syno-media-organizer/releases)
 2. In DSM: **Package Center → Manual Install** → select the `.spk` file
-3. **Edit the config** via File Station:
+3. **Grant shared folder permissions** (required — see section below)
+4. **Edit the config** via File Station:
    - Open **File Station** → shared folder `config` → `syno-media-organizer` → `config.toml`
    - Right-click → **Open with Text Editor** (install the free Text Editor package if needed)
    - Or via SSH: `vi /volume1/config/syno-media-organizer/config.toml`
-4. **Start the service** from **Package Center → Syno Media Organizer → Run**
-5. **Check logs** (SSH):
+5. **Start the service** from **Package Center → Syno Media Organizer → Run**
+6. **Check logs** (SSH):
    ```sh
    tail -f /var/packages/syno-media-organizer/var/syno-media-organizer.log
    ```
 
 > **Upgrading**: existing `config.toml` is automatically migrated and preserved.
 > **Uninstall**: Package Center → Syno Media Organizer → Uninstall
+
+---
+
+## Shared folder permissions (required)
+
+The service runs as a dedicated system user `syno-media-organizer`. Synology shared folders
+restrict access by user — you must explicitly grant this user access to every shared folder
+the tool reads from or writes to.
+
+**For each shared folder used as `input` or `output` in your config:**
+
+1. **Panneau de configuration** → **Dossier partagé**
+2. Select the folder → **Modifier** → tab **Permissions**
+3. Click **Ajouter** → search for user `syno-media-organizer`
+4. Grant: **Lecture/Écriture** (Read/Write) on input folders; **Lecture/Écriture** on output folders
+
+> The `config` shared folder (where `config.toml` lives) is handled automatically by the
+> installer — no manual action needed for it.
 
 ---
 

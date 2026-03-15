@@ -20,6 +20,17 @@ postinst() {
         echo "Default config installed at ${CONFIG} — please edit before starting the service."
     fi
 
+    # Grant the package user read access to the config shared folder.
+    # Synology shared folders use ACL-based permissions; the package user is not
+    # in the share's allowed list by default and cannot traverse /volume1/config.
+    SYNOACL=/usr/syno/bin/synoacltool
+    if [ -x "${SYNOACL}" ]; then
+        "${SYNOACL}" -add /volume1/config \
+            "user:${PACKAGE}:allow:r-x-----------:fd--" 2>/dev/null || true
+        "${SYNOACL}" -add "${CONFIG_DIR}" \
+            "user:${PACKAGE}:allow:r-x-----------:fd--" 2>/dev/null || true
+    fi
+
     exit 0
 }
 
