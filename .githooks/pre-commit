@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# pre-commit hook: enforces code quality before each commit.
+# Activate with: git config core.hooksPath .githooks
+set -euo pipefail
+
+echo "[pre-commit] Checking format..."
+cargo fmt --check
+
+echo "[pre-commit] Running clippy..."
+cargo clippy --all-targets -- -D warnings
+
+echo "[pre-commit] Running unit tests..."
+cargo test --lib
+
+echo "[pre-commit] All checks passed."
