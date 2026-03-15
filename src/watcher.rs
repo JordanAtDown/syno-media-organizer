@@ -6,8 +6,32 @@ use notify::Watcher;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tracing::{debug, error, info, warn};
+
+/// Receive from `rx` with a best-effort timeout implemented via `try_recv` + `thread::sleep`.
+/// Returns `Ok(value)` on success, or `Err` on timeout / disconnection.
+///
+/// Uses `SystemTime` (CLOCK_REALTIME) instead of `std::time::Instant` (CLOCK_BOOTTIME).
+/// CLOCK_BOOTTIME is unavailable on some Synology DSM kernels and causes a panic at startup.
+fn recv_timeout_compat<T>(
+    rx: &mpsc::Receiver<T>,
+    timeout: Duration,
+) -> Result<T, mpsc::TryRecvError> {
+    let deadline = SystemTime::now() + timeout;
+    loop {
+        match rx.try_recv() {
+            Ok(v) => return Ok(v),
+            Err(mpsc::TryRecvError::Empty) => {
+                if SystemTime::now() >= deadline {
+                    return Err(mpsc::TryRecvError::Empty);
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
 
 /// Start watching all configured folders and process incoming files.
 ///
@@ -61,10 +85,12 @@ pub fn run_with_shutdown(
     let debounce = Duration::from_millis(500);
 
     while !shutdown.load(Ordering::SeqCst) {
-        // Collect events with a short timeout so we can check shutdown flag
+        // Collect events with a short timeout so we can check shutdown flag.
+        // Uses recv_timeout_compat (try_recv + sleep) to avoid std::time::Instant,
+        // which relies on CLOCK_BOOTTIME and panics on some Synology DSM kernels.
         let mut pending: Vec<PathBuf> = Vec::new();
 
-        match rx.recv_timeout(Duration::from_millis(200)) {
+        match recv_timeout_compat(&rx, Duration::from_millis(200)) {
             Ok(Ok(event)) => {
                 for path in event.paths {
                     if path.is_file() {
@@ -72,9 +98,9 @@ pub fn run_with_shutdown(
                     }
                 }
                 // Drain remaining events within the debounce window
-                let deadline = std::time::Instant::now() + debounce;
-                while std::time::Instant::now() < deadline {
-                    match rx.recv_timeout(Duration::from_millis(50)) {
+                let deadline = SystemTime::now() + debounce;
+                while SystemTime::now() < deadline {
+                    match recv_timeout_compat(&rx, Duration::from_millis(50)) {
                         Ok(Ok(ev)) => {
                             for p in ev.paths {
                                 if p.is_file() {
@@ -91,8 +117,8 @@ pub fn run_with_shutdown(
                 warn!(error = %e, "watcher error");
                 continue;
             }
-            Err(mpsc::RecvTimeoutError::Timeout) => continue,
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
+            Err(mpsc::TryRecvError::Empty) => continue,
+            Err(mpsc::TryRecvError::Disconnected) => {
                 error!("watcher channel disconnected");
                 break;
             }
@@ -110,7 +136,6 @@ pub fn run_with_shutdown(
                 continue;
             };
 
-            // Filter by event type — only process Create/Modify events on files
             match processor::process_file(&path, folder_cfg, dry_run) {
                 Ok(()) => {}
                 Err(crate::error::ProcessorError::ExtensionNotAllowed(ext)) => {

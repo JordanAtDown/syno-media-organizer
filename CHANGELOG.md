@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.15] - 2026-03-15
+
+### Fixed
+- Watcher no longer panics at startup on DSM kernels where `CLOCK_BOOTTIME` returns `EINVAL`:
+  replaced `mpsc::recv_timeout` (which uses `std::time::Instant` / `CLOCK_BOOTTIME` internally)
+  with a `try_recv` + `thread::sleep` + `SystemTime` (`CLOCK_REALTIME`) polling loop
+
+---
+
 ## [0.1.14] - 2026-03-15
 
 ### Fixed
