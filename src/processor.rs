@@ -29,10 +29,7 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
     });
 
     // 3. Compute destination path from pattern
-    let stem = path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("file");
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -102,7 +99,12 @@ mod tests {
     use std::path::PathBuf;
     use tempfile::TempDir;
 
-    fn make_cfg(input: PathBuf, output: PathBuf, move_files: bool, on_conflict: OnConflict) -> FolderConfig {
+    fn make_cfg(
+        input: PathBuf,
+        output: PathBuf,
+        move_files: bool,
+        on_conflict: OnConflict,
+    ) -> FolderConfig {
         FolderConfig {
             input,
             output,
@@ -119,7 +121,12 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let file = tmp.path().join("document.pdf");
         std::fs::write(&file, b"pdf content").unwrap();
-        let cfg = make_cfg(tmp.path().to_path_buf(), tmp.path().join("out"), true, OnConflict::Rename);
+        let cfg = make_cfg(
+            tmp.path().to_path_buf(),
+            tmp.path().join("out"),
+            true,
+            OnConflict::Rename,
+        );
         let err = process_file(&file, &cfg, false).unwrap_err();
         assert!(matches!(err, ProcessorError::ExtensionNotAllowed(_)));
     }

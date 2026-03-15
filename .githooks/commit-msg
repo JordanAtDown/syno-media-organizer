@@ -4,6 +4,15 @@
 set -euo pipefail
 
 COMMIT_MSG_FILE="$1"
+
+# When running on Windows (Git Bash), re-invoke this hook through WSL.
+if [[ -z "${WSL_DISTRO_NAME:-}" ]] && command -v wsl.exe &>/dev/null; then
+    REPO_WIN=$(git rev-parse --show-toplevel)
+    REPO_WSL=$(wsl wslpath "$REPO_WIN")
+    wsl bash -c "cd '$REPO_WSL' && .githooks/commit-msg '$COMMIT_MSG_FILE'"
+    exit $?
+fi
+
 COMMIT_MSG="$(cat "${COMMIT_MSG_FILE}")"
 
 # Allow merge commits and revert commits

@@ -2,18 +2,13 @@ use crate::error::ConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum OnConflict {
+    #[default]
     Rename,
     Skip,
     Overwrite,
-}
-
-impl Default for OnConflict {
-    fn default() -> Self {
-        Self::Rename
-    }
 }
 
 fn default_pattern() -> String {

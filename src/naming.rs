@@ -54,10 +54,7 @@ pub fn resolve_conflict(
         OnConflict::Overwrite => Ok(Some(dest.to_path_buf())),
         OnConflict::Skip => Ok(None),
         OnConflict::Rename => {
-            let stem = dest
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("file");
+            let stem = dest.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
             let ext = dest
                 .extension()
                 .and_then(|e| e.to_str())
@@ -97,31 +94,46 @@ mod tests {
     #[case(
         "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}",
         date(2024, 3, 15, 10, 30, 45),
-        "IMG_001", ".jpg", None, 0,
+        "IMG_001",
+        ".jpg",
+        None,
+        0,
         "2024/03/2024-03-15_103045_IMG_001.jpg"
     )]
     #[case(
         "{year}/{month}/{stem}{ext}",
         date(2022, 12, 1, 0, 0, 0),
-        "photo", ".png", None, 0,
+        "photo",
+        ".png",
+        None,
+        0,
         "2022/12/photo.png"
     )]
     #[case(
         "{camera}/{year}/{stem}{ext}",
         date(2023, 6, 20, 8, 0, 0),
-        "DSC1234", ".jpg", Some("Canon EOS"), 0,
+        "DSC1234",
+        ".jpg",
+        Some("Canon EOS"),
+        0,
         "Canon EOS/2023/DSC1234.jpg"
     )]
     #[case(
         "{year}/{stem}_{counter}{ext}",
         date(2024, 1, 1, 12, 0, 0),
-        "file", ".mp4", None, 7,
+        "file",
+        ".mp4",
+        None,
+        7,
         "2024/file_0007.mp4"
     )]
     #[case(
         "{year}/{month}/{stem}{ext}",
         date(2024, 3, 15, 10, 30, 45),
-        "photo", ".jpg", None, 0,
+        "photo",
+        ".jpg",
+        None,
+        0,
         "2024/03/photo.jpg"
     )]
     fn test_apply_pattern(
@@ -133,7 +145,10 @@ mod tests {
         #[case] counter: u32,
         #[case] expected: &str,
     ) {
-        assert_eq!(apply_pattern(pattern, &date, stem, ext, camera, counter), expected);
+        assert_eq!(
+            apply_pattern(pattern, &date, stem, ext, camera, counter),
+            expected
+        );
     }
 
     #[test]
@@ -174,7 +189,9 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let dest = tmp.path().join("photo.jpg");
         std::fs::write(&dest, b"existing").unwrap();
-        let result = resolve_conflict(&dest, &OnConflict::Rename).unwrap().unwrap();
+        let result = resolve_conflict(&dest, &OnConflict::Rename)
+            .unwrap()
+            .unwrap();
         assert_eq!(result.file_name().unwrap().to_str().unwrap(), "photo_1.jpg");
     }
 
@@ -184,7 +201,9 @@ mod tests {
         let dest = tmp.path().join("photo.jpg");
         std::fs::write(&dest, b"existing").unwrap();
         std::fs::write(tmp.path().join("photo_1.jpg"), b"existing").unwrap();
-        let result = resolve_conflict(&dest, &OnConflict::Rename).unwrap().unwrap();
+        let result = resolve_conflict(&dest, &OnConflict::Rename)
+            .unwrap()
+            .unwrap();
         assert_eq!(result.file_name().unwrap().to_str().unwrap(), "photo_2.jpg");
     }
 }

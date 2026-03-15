@@ -38,9 +38,7 @@ fn init_tracing(verbose: bool, format: &str) {
             .with_env_filter(env_filter)
             .init();
     } else {
-        tracing_subscriber::fmt()
-            .with_env_filter(env_filter)
-            .init();
+        tracing_subscriber::fmt().with_env_filter(env_filter).init();
     }
 }
 

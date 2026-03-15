@@ -49,9 +49,19 @@ fn read_exif_date(path: &Path) -> Result<Option<DateTime<Local>>, ExifError> {
 
 /// Parse EXIF datetime string "YYYY:MM:DD HH:MM:SS" into a DateTime<Local>.
 fn parse_exif_datetime(s: &str) -> Option<DateTime<Local>> {
-    // EXIF format: "2024:01:15 14:30:00"
+    // EXIF format: "2024:01:15 14:30:00" — separators must be exactly ':', ':', ' ', ':', ':'
     let s = s.trim();
     if s.len() < 19 {
+        return None;
+    }
+    // Validate separators at fixed positions
+    let bytes = s.as_bytes();
+    if bytes[4] != b':'
+        || bytes[7] != b':'
+        || bytes[10] != b' '
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+    {
         return None;
     }
     let year: i32 = s[0..4].parse().ok()?;
@@ -68,9 +78,7 @@ fn parse_exif_datetime(s: &str) -> Option<DateTime<Local>> {
 
 fn read_mtime(path: &Path) -> Result<DateTime<Local>, ExifError> {
     let meta = std::fs::metadata(path)?;
-    let modified = meta
-        .modified()
-        .map_err(|e| ExifError::Io(e))?;
+    let modified = meta.modified().map_err(ExifError::Io)?;
     Ok(DateTime::from(modified))
 }
 
@@ -81,7 +89,10 @@ mod tests {
     #[test]
     fn test_parse_exif_datetime_valid() {
         let dt = parse_exif_datetime("2024:03:15 10:30:45").unwrap();
-        assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2024-03-15 10:30:45");
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2024-03-15 10:30:45"
+        );
     }
 
     #[test]
@@ -105,6 +116,9 @@ mod tests {
         // Mtime should be recent (within last minute)
         let now = Local::now();
         let diff = now.signed_duration_since(dt);
-        assert!(diff.num_seconds().abs() < 60, "mtime fallback should be recent");
+        assert!(
+            diff.num_seconds().abs() < 60,
+            "mtime fallback should be recent"
+        );
     }
 }

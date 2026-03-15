@@ -68,7 +68,11 @@ fn test_pipeline_jpeg(#[case] filename: &str, #[case] with_exif: bool) {
             .to_str()
             .unwrap()
             .replace('\\', "/");
-        assert!(rel.starts_with("2024/03/"), "expected 2024/03/ prefix, got {}", rel);
+        assert!(
+            rel.starts_with("2024/03/"),
+            "expected 2024/03/ prefix, got {}",
+            rel
+        );
     }
 }
 

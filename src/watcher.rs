@@ -5,7 +5,7 @@ use notify::RecursiveMode;
 use notify::Watcher;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, mpsc};
+use std::sync::{mpsc, Arc};
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
