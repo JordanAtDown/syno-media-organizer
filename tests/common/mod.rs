@@ -82,7 +82,7 @@ pub fn create_jpeg_with_exif(dir: &Path, name: &str, date: DateTime<Local>) -> P
     path
 }
 
-/// Create a minimal MP4 ftyp stub.
+/// Create a minimal MP4 ftyp stub — no moov/mvhd, used to test the "skip" path.
 pub fn create_mp4_stub(dir: &Path, name: &str) -> PathBuf {
     let path = dir.join(name);
     let ftyp: &[u8] = &[
@@ -90,6 +90,72 @@ pub fn create_mp4_stub(dir: &Path, name: &str) -> PathBuf {
         0x00, b'i', b's', b'o', b'm',
     ];
     std::fs::write(&path, ftyp).expect("Failed to write MP4 stub");
+    path
+}
+
+/// Create a minimal but valid MP4 file containing a `moov/mvhd` box with the given
+/// creation date. Equivalent of `create_jpeg_with_exif` for video files.
+///
+/// The date is converted to UTC and stored as a Mac epoch timestamp
+/// (seconds since 1904-01-01 00:00:00 UTC) in a version-0 mvhd box.
+pub fn create_mp4_with_quicktime_date(dir: &Path, name: &str, date: DateTime<Local>) -> PathBuf {
+    let path = dir.join(name);
+
+    let unix_secs = date.timestamp() as u64;
+    // Mac epoch offset: 1904-01-01 to 1970-01-01 = 2 082 844 800 seconds
+    let mac_secs = unix_secs + 2_082_844_800;
+
+    // ftyp box (20 bytes): isom brand
+    let ftyp: &[u8] = &[
+        0x00, 0x00, 0x00, 0x14, b'f', b't', b'y', b'p', b'i', b's', b'o', b'm', 0x00, 0x00, 0x02,
+        0x00, b'i', b's', b'o', b'm',
+    ];
+
+    // mvhd box version 0 (108 bytes total):
+    //   8  header (size + type)
+    //   1  version = 0
+    //   3  flags
+    //   4  creation_time (u32 BE, Mac epoch)
+    //   4  modification_time
+    //   4  time_scale
+    //   4  duration
+    //   4  rate (16.16 fixed, 1.0 = 0x00010000)
+    //   2  volume (8.8 fixed, 1.0 = 0x0100)
+    //  10  reserved
+    //  36  transformation matrix (identity)
+    //  24  pre-defined
+    //   4  next_track_id
+    let mut mvhd: Vec<u8> = Vec::new();
+    mvhd.extend_from_slice(&108u32.to_be_bytes()); // box size
+    mvhd.extend_from_slice(b"mvhd"); // box type
+    mvhd.push(0); // version = 0
+    mvhd.extend_from_slice(&[0u8; 3]); // flags
+    mvhd.extend_from_slice(&(mac_secs as u32).to_be_bytes()); // creation_time
+    mvhd.extend_from_slice(&(mac_secs as u32).to_be_bytes()); // modification_time
+    mvhd.extend_from_slice(&1000u32.to_be_bytes()); // time_scale = 1000
+    mvhd.extend_from_slice(&0u32.to_be_bytes()); // duration = 0
+    mvhd.extend_from_slice(&0x00010000u32.to_be_bytes()); // rate = 1.0
+    mvhd.extend_from_slice(&0x0100u16.to_be_bytes()); // volume = 1.0
+    mvhd.extend_from_slice(&[0u8; 10]); // reserved
+                                        // Identity matrix (36 bytes)
+    mvhd.extend_from_slice(&[
+        0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
+    ]);
+    mvhd.extend_from_slice(&[0u8; 24]); // pre-defined
+    mvhd.extend_from_slice(&1u32.to_be_bytes()); // next_track_id
+
+    // moov box = 8-byte header + 108-byte mvhd = 116 bytes
+    let mut moov: Vec<u8> = Vec::new();
+    moov.extend_from_slice(&116u32.to_be_bytes());
+    moov.extend_from_slice(b"moov");
+    moov.extend_from_slice(&mvhd);
+
+    let mut data: Vec<u8> = Vec::new();
+    data.extend_from_slice(ftyp);
+    data.extend_from_slice(&moov);
+    std::fs::write(&path, &data).expect("Failed to write test MP4 with QuickTime date");
     path
 }
 

@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-03-16
+
+### Added
+- Support MP4 and MOV video files: reads the `creation_time` field from the QuickTime
+  `mvhd` (Movie Header Box) inside the `moov` container. The value is stored as UTC
+  (seconds since 1904-01-01, Mac epoch) and converted to local time at runtime.
+- New `DateReader` trait (`src/date_reader.rs`): decouples the date-extraction strategy
+  from the processing pipeline. Swapping the concrete implementation (e.g. changing the
+  MP4 parsing crate) requires only a new `impl DateReader` — no changes to `processor.rs`.
+- `ExifDateReader` struct — wraps `kamadak-exif` for photos (JPEG, HEIC, PNG, TIFF).
+- `QuickTimeDateReader` struct — wraps the `mp4` crate for videos (MP4, MOV, AVI, MKV…).
+
+### Changed
+- Version bumped to 0.2.0 (video support is a significant new capability).
+- `processor.rs` now dispatches to the appropriate `DateReader` based on file extension
+  via `date_reader::for_extension()`, instead of calling `exif::read_date()` directly.
+
+---
+
 ## [0.1.22] - 2026-03-15
 
 ### Changed

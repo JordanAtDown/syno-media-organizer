@@ -1,5 +1,6 @@
 pub mod clock_compat;
 pub mod config;
+pub mod date_reader;
 pub mod error;
 pub mod exif;
 pub mod naming;

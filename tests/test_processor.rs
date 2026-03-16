@@ -1,6 +1,9 @@
 mod common;
 
-use common::{create_jpeg_with_exif, create_jpeg_without_exif, create_mp4_stub, make_date};
+use common::{
+    create_jpeg_with_exif, create_jpeg_without_exif, create_mp4_stub,
+    create_mp4_with_quicktime_date, make_date,
+};
 use rstest::rstest;
 use syno_media_organizer::config::{FolderConfig, OnConflict};
 use syno_media_organizer::processor::process_file;
@@ -125,8 +128,8 @@ fn test_conflict_strategies(#[case] strategy: OnConflict, #[case] expected_count
 }
 
 #[test]
-fn test_pipeline_mp4_stub_no_exif_is_skipped() {
-    // MP4 stubs have no EXIF DateTimeOriginal → must be skipped
+fn test_pipeline_mp4_no_quicktime_date_is_skipped() {
+    // MP4 stub without moov/mvhd → QuickTime creation date absent → must be skipped
     let input = TempDir::new().unwrap();
     let output = TempDir::new().unwrap();
     let file = create_mp4_stub(input.path(), "clip.mp4");
@@ -142,7 +145,7 @@ fn test_pipeline_mp4_stub_no_exif_is_skipped() {
 
     assert!(
         file.exists(),
-        "source must not be moved when EXIF is absent"
+        "source must not be moved when QuickTime date is absent"
     );
     let count = walkdir::WalkDir::new(output.path())
         .into_iter()
@@ -150,6 +153,47 @@ fn test_pipeline_mp4_stub_no_exif_is_skipped() {
         .filter(|e| e.file_type().is_file())
         .count();
     assert_eq!(count, 0);
+}
+
+#[test]
+fn test_pipeline_mp4_with_quicktime_date() {
+    // MP4 with a valid moov/mvhd → file is moved to the correct dated folder
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    // Use noon local time to avoid UTC↔local conversion crossing a date boundary
+    let date = make_date(2026, 1, 2, 12, 0, 0);
+    let file = create_mp4_with_quicktime_date(input.path(), "clip.mp4", date);
+
+    let cfg = make_cfg(
+        input.path().to_path_buf(),
+        output.path().to_path_buf(),
+        OnConflict::Rename,
+        vec!["mp4".to_string()],
+    );
+
+    process_file(&file, &cfg, false).unwrap();
+
+    assert!(!file.exists(), "source should be removed after move");
+
+    let files: Vec<_> = walkdir::WalkDir::new(output.path())
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .collect();
+    assert_eq!(files.len(), 1);
+
+    let rel = files[0]
+        .path()
+        .strip_prefix(output.path())
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .replace('\\', "/");
+    assert!(
+        rel.starts_with("2026/01/"),
+        "expected 2026/01/ prefix, got {}",
+        rel
+    );
 }
 
 #[test]

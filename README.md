@@ -18,8 +18,10 @@ CPU and memory footprint. Runs as a native Synology SPK service.
 ## Features
 
 - Polls one or more input folders every N seconds (default: 30s, configurable)
-- Reads EXIF `DateTimeOriginal` → `DateTimeDigitized` → `DateTime` → mtime fallback
-- Moves or copies files to `output/YYYY/MM/` according to a configurable pattern
+- **Photos**: reads EXIF `DateTimeOriginal` (tag 0x9003) — JPEG, HEIC, PNG, TIFF
+- **Videos**: reads QuickTime `mvhd` creation date (UTC → local time) — MP4, MOV, AVI, MKV…
+- Files without the required metadata tag are **skipped** — no fallback, no data loss
+- Moves files to `output/YYYY/MM/` according to a configurable naming pattern
 - Handles filename conflicts: `rename`, `skip`, or `overwrite`
 - Structured JSON logging compatible with DSM log center
 - Graceful shutdown on SIGTERM (DSM stop command)
@@ -32,15 +34,17 @@ CPU and memory footprint. Runs as a native Synology SPK service.
 ```
 every poll_interval_secs (default: 30s)
      │
-  watcher (scan new files by mtime)
+  watcher (scan input folder)
      │
   processor
      ├── validate extension
-     ├── read EXIF date
+     ├── read capture date
+     │     ├── photo → EXIF DateTimeOriginal (tag 0x9003)
+     │     └── video → QuickTime mvhd creation_time (UTC → local)
      ├── apply naming pattern
      ├── resolve conflicts
      ├── create directories
-     └── move or copy
+     └── move (rename syscall, fallback copy+delete)
 ```
 
 ---
@@ -128,6 +132,44 @@ extensions   = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 | `{camera}` | Camera model from EXIF (or `unknown`) |
 | `{counter}` | Auto-increment counter (0001, 0002, …) |
 | `{prefix}` | `photo_prefix` for photos, `video_prefix` for videos (default: `""`) |
+
+---
+
+## Supported formats
+
+### Photos — EXIF `DateTimeOriginal` (tag 0x9003)
+
+| Extension | Format |
+|-----------|--------|
+| `.jpg` / `.jpeg` | JPEG |
+| `.heic` / `.heif` | High Efficiency Image (iPhone) |
+| `.png` | PNG with EXIF APP1 block |
+| `.tiff` / `.tif` | TIFF |
+
+The file must contain a valid EXIF block with a `DateTimeOriginal` field.
+If the tag is absent the file is **skipped** — no fallback, file stays in input.
+
+### Videos — QuickTime `mvhd` creation date
+
+| Extension | Format |
+|-----------|--------|
+| `.mp4` | MPEG-4 |
+| `.mov` | QuickTime Movie (iPhone, cameras) |
+| `.avi` | Audio Video Interleave |
+| `.mkv` | Matroska |
+| `.3gp` | 3GPP (Android) |
+| `.m4v` | iTunes Video |
+| `.wmv` | Windows Media Video |
+| `.flv` | Flash Video |
+| `.webm` | WebM |
+| `.ts` / `.mts` / `.m2ts` | MPEG-2 Transport Stream |
+
+The `creation_time` field is read from the `mvhd` (Movie Header Box) inside the `moov`
+container. It is stored as **UTC** (seconds since 1904-01-01, Mac epoch) and converted
+to local time at runtime. If the `moov` box is absent the file is **skipped**.
+
+> Only extensions listed in the `extensions` config key are processed.
+> You must explicitly include the extensions you want (e.g. `["jpg", "heic", "mp4", "mov"]`).
 
 ---
 

@@ -1,12 +1,13 @@
 use crate::config::FolderConfig;
+use crate::date_reader;
 use crate::error::{ExifError, ProcessorError};
-use crate::{exif, naming};
+use crate::naming;
 use naming::is_video;
 use std::path::Path;
 use tracing::{debug, info, warn};
 
 /// Process a single file through the full pipeline:
-/// validate extension → read EXIF → compute destination → create dirs → move.
+/// validate extension → read capture date → compute destination → create dirs → move.
 ///
 /// Errors are returned but callers should log and continue (never crash on a single file).
 pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<(), ProcessorError> {
@@ -23,15 +24,16 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
 
     debug!(file = %path.display(), "processing file");
 
-    // 2. Read DateTimeOriginal — skip file if tag is absent
-    let date = match exif::read_date(path) {
+    // 2. Read capture date via the appropriate DateReader (EXIF for photos, QuickTime for videos)
+    let reader = date_reader::for_extension(&ext_lower);
+    let date = match reader.read_date(path) {
         Ok(dt) => dt,
         Err(ExifError::NoDateTimeOriginal) => {
-            warn!(file = %path.display(), "skipping: no DateTimeOriginal EXIF tag");
+            warn!(file = %path.display(), "skipping: capture date not found");
             return Ok(());
         }
         Err(e) => {
-            warn!(file = %path.display(), error = %e, "skipping: EXIF read error");
+            warn!(file = %path.display(), error = %e, "skipping: metadata read error");
             return Ok(());
         }
     };
@@ -134,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_process_no_exif_skips_file() {
-        // A stub MP4 with no EXIF DateTimeOriginal must be silently skipped
+        // A stub MP4 with no QuickTime mvhd must be silently skipped
         let input = TempDir::new().unwrap();
         let output = TempDir::new().unwrap();
         let file = input.path().join("video.mp4");
@@ -149,7 +151,7 @@ mod tests {
         process_file(&file, &cfg, false).unwrap();
         assert!(
             file.exists(),
-            "source must not be moved when EXIF is absent"
+            "source must not be moved when metadata is absent"
         );
     }
 
