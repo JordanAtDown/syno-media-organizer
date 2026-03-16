@@ -40,6 +40,16 @@ fn default_empty_string() -> String {
     String::new()
 }
 
+fn default_excluded_dirs() -> Vec<String> {
+    vec![
+        "@eaDir".to_string(),
+        "@SynoEAStream".to_string(),
+        "@Recycle".to_string(),
+        "#recycle".to_string(),
+        "@tmp".to_string(),
+    ]
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FolderConfig {
     /// Source folder to watch
@@ -64,6 +74,10 @@ pub struct FolderConfig {
     /// Allowed file extensions (lowercase, without dot)
     #[serde(default = "default_extensions")]
     pub extensions: Vec<String>,
+    /// Directory names to exclude from scanning (matched against each path component).
+    /// Default covers all Synology DSM auto-generated hidden folders.
+    #[serde(default = "default_excluded_dirs")]
+    pub excluded_dirs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -191,5 +205,40 @@ extensions = ["jpg", "png"]
         );
         let cfg = load(f.path()).unwrap();
         assert_eq!(cfg.folders[0].extensions, vec!["jpg", "png"]);
+    }
+
+    #[test]
+    fn test_default_excluded_dirs_contains_eadir() {
+        let f = write_config(
+            r#"
+[[folders]]
+input = "/volume1/inbox"
+output = "/volume1/photos"
+"#,
+        );
+        let cfg = load(f.path()).unwrap();
+        let excluded = &cfg.folders[0].excluded_dirs;
+        assert!(excluded.contains(&"@eaDir".to_string()));
+        assert!(excluded.contains(&"@SynoEAStream".to_string()));
+        assert!(excluded.contains(&"@Recycle".to_string()));
+        assert!(excluded.contains(&"#recycle".to_string()));
+        assert!(excluded.contains(&"@tmp".to_string()));
+    }
+
+    #[test]
+    fn test_custom_excluded_dirs() {
+        let f = write_config(
+            r#"
+[[folders]]
+input = "/volume1/inbox"
+output = "/volume1/photos"
+excluded_dirs = ["@eaDir", "my-custom-dir"]
+"#,
+        );
+        let cfg = load(f.path()).unwrap();
+        assert_eq!(
+            cfg.folders[0].excluded_dirs,
+            vec!["@eaDir", "my-custom-dir"]
+        );
     }
 }

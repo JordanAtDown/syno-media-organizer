@@ -24,6 +24,7 @@ fn make_cfg(
         video_prefix: String::new(),
         on_conflict,
         extensions,
+        excluded_dirs: vec![],
     }
 }
 

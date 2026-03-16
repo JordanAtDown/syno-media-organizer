@@ -117,6 +117,7 @@ mod tests {
             video_prefix: String::new(),
             on_conflict,
             extensions: vec!["jpg".to_string(), "mp4".to_string()],
+            excluded_dirs: vec![],
         }
     }
 

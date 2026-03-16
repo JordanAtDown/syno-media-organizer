@@ -1,11 +1,14 @@
 # syno-media-organizer configuration example
-# Copy this file to /etc/syno-media-organizer/config.toml and adjust paths.
+# Copy this file to /volume1/config/syno-media-organizer/config.toml and adjust paths.
+
+# Scan interval in seconds (optional, default: 30)
+poll_interval_secs = 30
 
 # Each [[folders]] block defines one watched input folder.
-# You can define as many as needed.
+# You can define as many [[folders]] blocks as needed.
 
 [[folders]]
-# Folder to watch for new files (inotify)
+# Folder to watch for new files
 input = "/volume1/inbox/camera"
 
 # Root destination folder — files will be placed in output/YYYY/MM/
@@ -22,14 +25,15 @@ output = "/volume1/Phototheque"
 #   {ext}     — file extension with dot (.jpg)
 #   {camera}  — camera model from EXIF (or "unknown")
 #   {counter} — auto-increment counter to avoid conflicts
+#   {prefix}  — photo_prefix for photos, video_prefix for videos
 pattern = "{year}/{month}/{year}-{month}-{day}_{hour}{min}{sec}_{stem}{ext}"
+
+# Optional prefixes injected via {prefix} token (default: "")
+# photo_prefix = "IMG_"
+# video_prefix = "VID_"
 
 # Watch sub-folders recursively (default: true)
 recursive = true
-
-# Move files instead of copying (default: true)
-# Set to false to keep originals in the input folder
-move_files = true
 
 # What to do when a file with the same name already exists at the destination:
 #   rename    — append _1, _2, ... until unique (default)
@@ -41,12 +45,29 @@ on_conflict = "rename"
 # Only files matching these extensions will be processed
 extensions = ["jpg", "jpeg", "png", "heic", "mp4", "mov", "avi", "mkv"]
 
+# Directories to exclude from scanning (matched against each path component).
+# The default already covers all Synology DSM auto-generated hidden folders.
+# Override only if you need to add or remove entries.
+#
+# Complete list of Synology DSM directories you may want to exclude:
+#   @eaDir             — thumbnails and metadata (Synology Photos / Photo Station)
+#   @SynoEAStream      — extended attribute streams (DSM filesystem feature)
+#   @Recycle           — Synology shared folder recycle bin
+#   #recycle           — alternate recycle bin name (depends on DSM version)
+#   @tmp               — DSM temporary files
+#   @sharebin          — shared folder trash (older DSM versions)
+#   @database          — Synology Photos internal database
+#   @photos            — Synology Photos working directory
+#   @Recently-Snapshot — Btrfs snapshot staging area (only on Btrfs volumes)
+#
+# excluded_dirs = ["@eaDir", "@SynoEAStream", "@Recycle", "#recycle", "@tmp"]
 
-# Second folder example — phone photos, copy only, no recursion
+
+# Second folder example — Synology Drive sync folder
 [[folders]]
-input = "/volume1/inbox/phone"
-output = "/volume1/Phototheque"
-recursive = false
-move_files = false
+input = "/volume1/homes/jordan/Drive/Synchro"
+output = "/volume1/homes/jordan/Photos/PhotoLibrary"
+recursive = true
 on_conflict = "skip"
-extensions = ["jpg", "jpeg", "heic", "mp4"]
+extensions = ["jpg", "jpeg", "heic", "png", "mp4", "mov"]
+# excluded_dirs = ["@eaDir", "@SynoEAStream", "@Recycle", "#recycle", "@tmp"]

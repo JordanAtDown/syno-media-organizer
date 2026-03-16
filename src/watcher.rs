@@ -78,6 +78,14 @@ fn scan_folder(folder: &crate::config::FolderConfig, dry_run: bool) -> Result<us
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
+        .filter(|e| {
+            !e.path().components().any(|c| {
+                folder
+                    .excluded_dirs
+                    .iter()
+                    .any(|ex| ex.as_str() == c.as_os_str())
+            })
+        })
     {
         debug!(path = %entry.path().display(), "found new file");
 

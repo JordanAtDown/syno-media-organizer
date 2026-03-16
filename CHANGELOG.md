@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.2] - 2026-03-16
+
+### Fixed
+- Files inside Synology DSM auto-generated directories (`@eaDir`, `@SynoEAStream`, `@Recycle`,
+  `#recycle`, `@tmp`) are now silently ignored during scanning. Previously, the watcher processed
+  `@eaDir/*/SYNOPHOTO_FILM_M.mp4` (Synology video thumbnails), which had `mvhd.creation_time = 0`
+  and were incorrectly moved to `output/1970/01/`.
+- `mvhd.creation_time = 0` (unset field in synthetic/encoder-generated MP4 files) now returns
+  `NoDateTimeOriginal` instead of producing a `1970-01-01` date.
+
+### Added
+- New per-folder config option `excluded_dirs` (`Vec<String>`): list of directory names to skip
+  during scanning, matched against every component of the file path. Defaults to
+  `["@eaDir", "@SynoEAStream", "@Recycle", "#recycle", "@tmp"]`. Fully customizable — see
+  `config.example.toml` for the complete list of Synology DSM directories.
+
+---
+
 ## [0.2.1] - 2026-03-16
 
 ### Fixed
