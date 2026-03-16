@@ -1,8 +1,7 @@
 use crate::error::ExifError;
 use chrono::{DateTime, Local, TimeZone};
-use mp4::Mp4Reader;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
 /// Read the capture date from a file's EXIF DateTimeOriginal tag (tag 0x9003).
@@ -32,34 +31,123 @@ pub fn read_exif_date(path: &Path) -> Result<DateTime<Local>, ExifError> {
     Err(ExifError::NoDateTimeOriginal)
 }
 
-/// Read the capture date from a QuickTime/MP4 file's mvhd creation_time atom.
+/// Read the capture date from a QuickTime/MP4 file's `mvhd` `creation_time` field.
+///
+/// Traverses only `moov → mvhd` — does NOT parse `trak`, `mdia`, `stbl` or any
+/// other sub-tree. This makes it robust against Apple-specific boxes (`tapt`, `clef`,
+/// `prof`, `enof`) that trip up full-tree parsers.
+///
 /// The value is stored as UTC seconds since the Mac epoch (1904-01-01 00:00:00 UTC)
-/// and is converted to local time.
-/// Returns `ExifError::NoDateTimeOriginal` if the box is absent or unreadable.
+/// and is converted to local time at runtime.
+///
+/// Returns `ExifError::NoDateTimeOriginal` if the `mvhd` box is absent or unreadable.
 pub fn read_quicktime_date(path: &Path) -> Result<DateTime<Local>, ExifError> {
     let file = File::open(path)?;
-    let size = file.metadata()?.len();
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
+    read_mvhd_creation_time(&mut reader)
+}
 
-    let mp4 = Mp4Reader::read_header(reader, size).map_err(|_| ExifError::NoDateTimeOriginal)?;
+// ---------------------------------------------------------------------------
+// Internal ISOBMFF / QuickTime box traversal
+// ---------------------------------------------------------------------------
 
-    let mac_secs = mp4.moov.mvhd.creation_time;
+fn read_mvhd_creation_time<R: Read + Seek>(r: &mut R) -> Result<DateTime<Local>, ExifError> {
+    loop {
+        let (box_type, payload_len) = read_box_header(r)?;
+        if &box_type == b"moov" {
+            return read_mvhd_in_moov(r, payload_len);
+        }
+        // Skip all other top-level boxes (ftyp, mdat, free, wide, …)
+        r.seek(SeekFrom::Current(payload_len as i64))
+            .map_err(|_| ExifError::NoDateTimeOriginal)?;
+    }
+}
+
+fn read_mvhd_in_moov<R: Read + Seek>(
+    r: &mut R,
+    moov_payload: u64,
+) -> Result<DateTime<Local>, ExifError> {
+    let start = r
+        .stream_position()
+        .map_err(|_| ExifError::NoDateTimeOriginal)?;
+    let end = start + moov_payload;
+
+    while r
+        .stream_position()
+        .map_err(|_| ExifError::NoDateTimeOriginal)?
+        + 8
+        <= end
+    {
+        let (box_type, payload_len) = read_box_header(r)?;
+        if &box_type == b"mvhd" {
+            return parse_mvhd_creation_time(r);
+        }
+        // Skip trak, udta, meta, and all other moov children
+        r.seek(SeekFrom::Current(payload_len as i64))
+            .map_err(|_| ExifError::NoDateTimeOriginal)?;
+    }
+    Err(ExifError::NoDateTimeOriginal)
+}
+
+fn parse_mvhd_creation_time<R: Read>(r: &mut R) -> Result<DateTime<Local>, ExifError> {
+    let mut ver_flags = [0u8; 4];
+    r.read_exact(&mut ver_flags)
+        .map_err(|_| ExifError::NoDateTimeOriginal)?;
+    let version = ver_flags[0];
+
     // Mac epoch (1904-01-01 UTC) → Unix epoch (1970-01-01 UTC): subtract 2 082 844 800 s
-    let unix_secs = mac_secs.saturating_sub(2_082_844_800);
+    let mac_secs: u64 = if version == 0 {
+        let mut buf = [0u8; 4];
+        r.read_exact(&mut buf)
+            .map_err(|_| ExifError::NoDateTimeOriginal)?;
+        u32::from_be_bytes(buf) as u64
+    } else if version == 1 {
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)
+            .map_err(|_| ExifError::NoDateTimeOriginal)?;
+        u64::from_be_bytes(buf)
+    } else {
+        return Err(ExifError::NoDateTimeOriginal);
+    };
 
+    let unix_secs = mac_secs.saturating_sub(2_082_844_800);
     DateTime::from_timestamp(unix_secs as i64, 0)
         .map(|dt| dt.with_timezone(&Local))
         .ok_or(ExifError::NoDateTimeOriginal)
 }
 
+/// Read an ISOBMFF/QuickTime box header.
+/// Returns `(box_type: [u8; 4], payload_size: u64)` where payload_size excludes the header.
+fn read_box_header<R: Read>(r: &mut R) -> Result<([u8; 4], u64), ExifError> {
+    let mut header = [0u8; 8];
+    r.read_exact(&mut header)
+        .map_err(|_| ExifError::NoDateTimeOriginal)?;
+    let size = u32::from_be_bytes([header[0], header[1], header[2], header[3]]);
+    let box_type = [header[4], header[5], header[6], header[7]];
+    let payload = match size {
+        0 => return Err(ExifError::NoDateTimeOriginal), // box extends to EOF — unsupported
+        1 => {
+            // 64-bit extended size (rare)
+            let mut ext = [0u8; 8];
+            r.read_exact(&mut ext)
+                .map_err(|_| ExifError::NoDateTimeOriginal)?;
+            u64::from_be_bytes(ext).saturating_sub(16)
+        }
+        s => (s as u64).saturating_sub(8),
+    };
+    Ok((box_type, payload))
+}
+
+// ---------------------------------------------------------------------------
+// EXIF datetime string parsing
+// ---------------------------------------------------------------------------
+
 /// Parse EXIF datetime string "YYYY:MM:DD HH:MM:SS" into a DateTime<Local>.
 fn parse_exif_datetime(s: &str) -> Option<DateTime<Local>> {
-    // EXIF format: "2024:01:15 14:30:00" — separators must be exactly ':', ':', ' ', ':', ':'
     let s = s.trim();
     if s.len() < 19 {
         return None;
     }
-    // Validate separators at fixed positions
     let bytes = s.as_bytes();
     if bytes[4] != b':'
         || bytes[7] != b':'
@@ -81,6 +169,10 @@ fn parse_exif_datetime(s: &str) -> Option<DateTime<Local>> {
         .single()
 }
 
+// ---------------------------------------------------------------------------
+// Unit tests
+// ---------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,7 +189,7 @@ mod tests {
     #[test]
     fn test_parse_exif_datetime_invalid() {
         assert!(parse_exif_datetime("not a date").is_none());
-        assert!(parse_exif_datetime("2024-03-15 10:30:45").is_none()); // wrong separator
+        assert!(parse_exif_datetime("2024-03-15 10:30:45").is_none());
         assert!(parse_exif_datetime("").is_none());
     }
 
@@ -129,11 +221,10 @@ mod tests {
 
     #[test]
     fn test_read_quicktime_date_valid() {
-        // Build a minimal MP4 (ftyp + moov/mvhd) with a known creation_time.
-        // Use 2026-01-02 11:41:57 UTC → Mac epoch = unix + 2_082_844_800
-        // 2026-01-01 00:00:00 UTC = 1_767_225_600
-        // 2026-01-02 11:41:57 UTC = 1_767_225_600 + 86400 + 42117 = 1_767_354_117
-        // Mac timestamp            = 1_767_354_117 + 2_082_844_800 = 3_850_198_917
+        // Synthetic MP4 with ftyp + moov/mvhd (version 0).
+        // 2026-01-02 11:41:57 UTC:
+        //   unix  = 1_767_354_117
+        //   mac   = 1_767_354_117 + 2_082_844_800 = 3_850_198_917
         let mac_secs: u32 = 3_850_198_917;
 
         let ftyp: &[u8] = &[
@@ -145,21 +236,21 @@ mod tests {
         mvhd.extend_from_slice(&108u32.to_be_bytes());
         mvhd.extend_from_slice(b"mvhd");
         mvhd.push(0); // version 0
-        mvhd.extend_from_slice(&[0u8; 3]); // flags
+        mvhd.extend_from_slice(&[0u8; 3]);
         mvhd.extend_from_slice(&mac_secs.to_be_bytes()); // creation_time
         mvhd.extend_from_slice(&mac_secs.to_be_bytes()); // modification_time
         mvhd.extend_from_slice(&1000u32.to_be_bytes()); // time_scale
         mvhd.extend_from_slice(&0u32.to_be_bytes()); // duration
         mvhd.extend_from_slice(&0x00010000u32.to_be_bytes()); // rate
         mvhd.extend_from_slice(&0x0100u16.to_be_bytes()); // volume
-        mvhd.extend_from_slice(&[0u8; 10]); // reserved
+        mvhd.extend_from_slice(&[0u8; 10]);
         mvhd.extend_from_slice(&[
             0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
-        ]); // identity matrix
-        mvhd.extend_from_slice(&[0u8; 24]); // pre-defined
-        mvhd.extend_from_slice(&1u32.to_be_bytes()); // next_track_id
+        ]);
+        mvhd.extend_from_slice(&[0u8; 24]);
+        mvhd.extend_from_slice(&1u32.to_be_bytes());
 
         let mut moov: Vec<u8> = Vec::new();
         moov.extend_from_slice(&116u32.to_be_bytes());
@@ -174,8 +265,6 @@ mod tests {
         std::fs::write(tmp.path(), &data).unwrap();
 
         let dt = read_quicktime_date(tmp.path()).unwrap();
-        // The stored UTC time is 2026-01-02 11:41:57 UTC.
-        // We verify the UTC equivalent matches regardless of local timezone.
         let dt_utc = dt.with_timezone(&chrono::Utc);
         assert_eq!(
             dt_utc.format("%Y-%m-%d %H:%M:%S").to_string(),

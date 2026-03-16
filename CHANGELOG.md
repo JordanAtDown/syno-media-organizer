@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-03-16
+
+### Fixed
+- QuickTime/MOV files from iPhone (and other Apple devices) are now parsed correctly.
+  The `mp4 = "0.14"` crate failed on Apple-specific `trak` sub-boxes (`tapt`, `clef`,
+  `prof`, `enof`) which are valid QuickTime extensions but not part of the MPEG-4 spec.
+  Replaced with a minimal manual ISOBMFF parser that reads only `moov → mvhd`, skipping
+  all other boxes. Works for both QuickTime (`qt  ` brand) and MPEG-4 (`isom`) files.
+
+### Changed
+- Removed `mp4 = "0.14"` dependency — no longer needed.
+
+### Added
+- Integration test fixture `tests/fixtures/sample_iphone.mov`: header-only extract
+  (ftyp + moov, 4.7 KB) from a real iPhone XS `.mov` file, used to guard against
+  regressions on Apple-specific QuickTime box structures.
+
+---
+
 ## [0.2.0] - 2026-03-16
 
 ### Added

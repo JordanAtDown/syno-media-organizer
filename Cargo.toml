@@ -1,6 +1,6 @@
 [package]
 name = "syno-media-organizer"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Automatically organize photos and videos by EXIF date on Synology NAS"
 license = "MIT"
@@ -9,7 +9,6 @@ repository = "https://github.com/JordanAtDown/syno-media-organizer"
 [dependencies]
 libc = "0.2"
 kamadak-exif = "0.5"
-mp4 = "0.14"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
