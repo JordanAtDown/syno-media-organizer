@@ -1,5 +1,5 @@
 package="syno-media-organizer"
-version="0.2.1"
+version="0.2.2"
 arch="monaco"
 firmware="7.0-40000"
 description="Automatically organize photos and videos by EXIF date"
