@@ -4,6 +4,16 @@
 # Scan interval in seconds (optional, default: 30)
 poll_interval_secs = 30
 
+# Persistent cache for files without capture date metadata.
+# Files that fail metadata extraction are remembered on disk so they are only
+# logged once. On subsequent scans they are silently skipped unless their
+# modification time changes (file was updated) or the TTL expires.
+# The cache is stored next to config.toml as no_date_cache.json.
+# To reset it manually: delete no_date_cache.json or set no_date_cache_enabled = false.
+#
+# no_date_cache_enabled = true     # default: true; set false to always re-scan all files
+# no_date_cache_ttl_days = 0       # default: 0 (never expire); e.g. 30 = retry monthly
+
 # Each [[folders]] block defines one watched input folder.
 # You can define as many [[folders]] blocks as needed.
 

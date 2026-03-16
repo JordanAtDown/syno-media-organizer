@@ -56,7 +56,13 @@ fn main() -> Result<()> {
 
     let cfg = config::load(&cli.config)?;
 
-    watcher::run(cfg, cli.dry_run)?;
+    let cache_path = cli
+        .config
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."))
+        .join("no_date_cache.json");
+
+    watcher::run(cfg, cli.dry_run, cache_path)?;
 
     Ok(())
 }

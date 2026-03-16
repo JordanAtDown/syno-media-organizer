@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.3] - 2026-03-16
+
+### Added
+- Persistent no-date cache (`no_date_cache.json`, stored next to `config.toml`): files
+  that fail capture-date extraction are remembered across scan cycles and silently skipped
+  until their modification time changes or the TTL expires. Previously, the same files
+  generated a `WARN` log on every 30-second scan cycle.
+- New global config options:
+  - `no_date_cache_enabled` (default `true`): set to `false` to disable the cache and
+    always re-scan every file.
+  - `no_date_cache_ttl_days` (default `0` = never expire): set e.g. `30` to retry files
+    without metadata once a month regardless of mtime.
+- Cache is invalidated automatically when a file's mtime changes (e.g. EXIF added via
+  `exiftool`), so modified files are always re-processed without manual intervention.
+- `postuninst()` hook in SPK installer: deletes `no_date_cache.json` on package
+  uninstall while preserving the user's `config.toml`.
+
+### Changed
+- `processor::process_file()` now returns `Err(ProcessorError::CaptureDataNotFound)`
+  instead of `Ok(())` when no capture date is found. The watcher emits the `WARN` log
+  once (on first discovery) and then silently skips the file via the cache.
+
+---
+
 ## [0.2.2] - 2026-03-16
 
 ### Fixed

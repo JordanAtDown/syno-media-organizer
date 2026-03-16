@@ -808,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "syno-media-organizer"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -818,6 +818,7 @@ dependencies = [
  "libc",
  "rstest",
  "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
  "toml",

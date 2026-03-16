@@ -4,5 +4,6 @@ pub mod date_reader;
 pub mod error;
 pub mod exif;
 pub mod naming;
+pub mod no_date_cache;
 pub mod processor;
 pub mod watcher;

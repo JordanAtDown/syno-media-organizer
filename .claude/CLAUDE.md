@@ -18,15 +18,24 @@ folder hierarchy (`output/YYYY/MM/`) according to a configurable naming pattern.
 
 ```
 src/
-├── main.rs       CLI parsing (clap) + tracing init + entry point
-├── lib.rs        Re-exports all modules as a library (for integration tests)
-├── config.rs     TOML config parsing — Config, FolderConfig, OnConflict
-├── error.rs      Typed errors for each module (thiserror)
-├── exif.rs       EXIF date reading (kamadak-exif) + mtime fallback
-├── naming.rs     Pattern engine + conflict resolution (Rename/Skip/Overwrite)
-├── processor.rs  Full file pipeline: validate → exif → name → mkdir → move/copy
-└── watcher.rs    notify watcher with 500ms debounce + SIGTERM via ctrlc
+├── main.rs           CLI parsing (clap) + tracing init + entry point
+├── lib.rs            Re-exports all modules as a library (for integration tests)
+├── config.rs         TOML config parsing — Config, FolderConfig, OnConflict
+├── error.rs          Typed errors for each module (thiserror)
+├── exif.rs           EXIF date reading (kamadak-exif)
+├── date_reader.rs    DateReader trait + dispatch by extension (EXIF / QuickTime)
+├── naming.rs         Pattern engine + conflict resolution (Rename/Skip/Overwrite)
+├── no_date_cache.rs  Persistent JSON cache of files without capture date metadata
+├── processor.rs      Full file pipeline: validate → date → name → mkdir → move
+└── watcher.rs        Polling watcher + NoDateCache integration + SIGTERM via ctrlc
 ```
+
+---
+
+## Documentation rule
+
+**After every feature or bug fix, verify that `README.md` and `config.example.toml` are up to date.**
+New config options, new behaviours, and removed features must be reflected in both files before release.
 
 ---
 

@@ -147,6 +147,37 @@ To override the default list, add `excluded_dirs` to any `[[folders]]` block:
 excluded_dirs = ["@eaDir", "@SynoEAStream", "@Recycle", "#recycle", "@tmp", "my-custom-dir"]
 ```
 
+### No-date cache
+
+Files that have no capture date metadata (no EXIF `DateTimeOriginal`, no QuickTime
+`mvhd` creation time) cannot be organised. By default the watcher logs a `WARN` the
+**first time** it encounters such a file and then remembers it in a persistent cache
+(`no_date_cache.json`, stored next to `config.toml`). On subsequent scan cycles the
+file is silently skipped.
+
+The cache entry is automatically invalidated when:
+- The file's **modification time changes** (e.g. you add EXIF with `exiftool`) — the
+  file will be re-tried on the next scan.
+- The **TTL expires** — if `no_date_cache_ttl_days` is set, the file is retried after
+  that many days regardless of mtime.
+
+Global config options (add to `config.toml`, outside any `[[folders]]` block):
+
+```toml
+# default: true — set false to always re-scan all files, even those without metadata
+no_date_cache_enabled = true
+
+# default: 0 (never expire) — set e.g. 30 to retry files without metadata once a month
+no_date_cache_ttl_days = 0
+```
+
+To **reset the cache manually**, delete the file:
+```sh
+rm /volume1/config/syno-media-organizer/no_date_cache.json
+```
+The cache is also deleted automatically when the package is uninstalled from Package
+Center (your `config.toml` is preserved).
+
 ### Pattern tokens
 
 | Token | Description |

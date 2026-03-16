@@ -1,10 +1,10 @@
 use crate::config::FolderConfig;
 use crate::date_reader;
-use crate::error::{ExifError, ProcessorError};
+use crate::error::ProcessorError;
 use crate::naming;
 use naming::is_video;
 use std::path::Path;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Process a single file through the full pipeline:
 /// validate extension → read capture date → compute destination → create dirs → move.
@@ -28,13 +28,8 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
     let reader = date_reader::for_extension(&ext_lower);
     let date = match reader.read_date(path) {
         Ok(dt) => dt,
-        Err(ExifError::NoDateTimeOriginal) => {
-            warn!(file = %path.display(), "skipping: capture date not found");
-            return Ok(());
-        }
-        Err(e) => {
-            warn!(file = %path.display(), error = %e, "skipping: metadata read error");
-            return Ok(());
+        Err(_) => {
+            return Err(ProcessorError::CaptureDataNotFound);
         }
     };
 
@@ -137,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_process_no_exif_skips_file() {
-        // A stub MP4 with no QuickTime mvhd must be silently skipped
+        // A stub MP4 with no QuickTime mvhd must return CaptureDataNotFound
         let input = TempDir::new().unwrap();
         let output = TempDir::new().unwrap();
         let file = input.path().join("video.mp4");
@@ -149,7 +144,8 @@ mod tests {
             OnConflict::Rename,
         );
 
-        process_file(&file, &cfg, false).unwrap();
+        let err = process_file(&file, &cfg, false).unwrap_err();
+        assert!(matches!(err, ProcessorError::CaptureDataNotFound));
         assert!(
             file.exists(),
             "source must not be moved when metadata is absent"
@@ -158,6 +154,7 @@ mod tests {
 
     #[test]
     fn test_process_dry_run_no_changes() {
+        // A file without EXIF returns CaptureDataNotFound early — no files are ever touched.
         let input = TempDir::new().unwrap();
         let output = TempDir::new().unwrap();
         let file = input.path().join("photo.jpg");
@@ -169,7 +166,8 @@ mod tests {
             OnConflict::Rename,
         );
 
-        process_file(&file, &cfg, true).unwrap();
+        let err = process_file(&file, &cfg, true).unwrap_err();
+        assert!(matches!(err, ProcessorError::CaptureDataNotFound));
 
         assert!(file.exists());
         let count = walkdir::WalkDir::new(output.path())

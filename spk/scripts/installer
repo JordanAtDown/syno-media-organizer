@@ -44,4 +44,10 @@ preuninst() {
     exit 0
 }
 
+postuninst() {
+    # Remove the generated cache file — user config (config.toml) is preserved.
+    rm -f "${CONFIG_DIR}/no_date_cache.json"
+    exit 0
+}
+
 $1

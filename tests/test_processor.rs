@@ -6,6 +6,7 @@ use common::{
 };
 use rstest::rstest;
 use syno_media_organizer::config::{FolderConfig, OnConflict};
+use syno_media_organizer::error::ProcessorError;
 use syno_media_organizer::processor::process_file;
 use tempfile::TempDir;
 
@@ -80,7 +81,8 @@ fn test_pipeline_jpeg_no_exif_is_skipped() {
         vec!["jpg".to_string()],
     );
 
-    process_file(&file, &cfg, false).unwrap();
+    let err = process_file(&file, &cfg, false).unwrap_err();
+    assert!(matches!(err, ProcessorError::CaptureDataNotFound));
 
     // No DateTimeOriginal → file must stay in input, output must be empty
     assert!(
@@ -142,7 +144,8 @@ fn test_pipeline_mp4_no_quicktime_date_is_skipped() {
         vec!["mp4".to_string()],
     );
 
-    process_file(&file, &cfg, false).unwrap();
+    let err = process_file(&file, &cfg, false).unwrap_err();
+    assert!(matches!(err, ProcessorError::CaptureDataNotFound));
 
     assert!(
         file.exists(),
@@ -201,7 +204,9 @@ fn test_pipeline_mp4_with_quicktime_date() {
 fn test_dry_run_no_side_effects() {
     let input = TempDir::new().unwrap();
     let output = TempDir::new().unwrap();
-    let file = create_jpeg_without_exif(input.path(), "photo.jpg");
+    // Use a file with valid EXIF so the dry-run path is actually exercised
+    let date = make_date(2024, 5, 20, 9, 0, 0);
+    let file = create_jpeg_with_exif(input.path(), "photo.jpg", date);
 
     let cfg = make_cfg(
         input.path().to_path_buf(),

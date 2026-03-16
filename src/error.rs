@@ -34,6 +34,8 @@ pub enum ProcessorError {
     FileNotFound(String),
     #[error("Extension not allowed: {0}")]
     ExtensionNotAllowed(String),
+    #[error("No capture date found in file metadata")]
+    CaptureDataNotFound,
     #[error("IO error during processing: {0}")]
     Io(#[from] std::io::Error),
     #[error("Naming error: {0}")]

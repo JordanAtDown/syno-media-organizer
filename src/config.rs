@@ -87,6 +87,16 @@ pub struct Config {
     /// How often to scan input folders, in seconds (default: 30)
     #[serde(default = "default_poll_interval")]
     pub poll_interval_secs: u64,
+    /// Enable the persistent cache for files without capture date (default: true).
+    /// When enabled, files that fail metadata extraction are remembered across scans
+    /// and only logged once. Set to false to re-scan all files every cycle.
+    #[serde(default = "default_true")]
+    pub no_date_cache_enabled: bool,
+    /// How many days to keep a no-date cache entry before retrying the file (default: 0 = never).
+    /// If 0, cached entries are only invalidated when the file's mtime changes.
+    /// Example: 30 = retry files without metadata once a month.
+    #[serde(default)]
+    pub no_date_cache_ttl_days: u32,
 }
 
 pub fn load(path: &Path) -> Result<Config, ConfigError> {
