@@ -62,3 +62,28 @@ jobs:
           files: |
             dist/syno-media-organizer-*.spk
             dist/syno-media-organizer-*.spk.sha256
+
+      - name: Update packages.json with SPK metadata
+        run: |
+          VERSION=${{ steps.changelog.outputs.version }}
+          SPK_FILE="dist/syno-media-organizer-${VERSION}.spk"
+          SPK_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/syno-media-organizer-${VERSION}.spk"
+          SPK_SIZE=$(stat -c%s "$SPK_FILE")
+          SPK_MD5=$(md5sum "$SPK_FILE" | cut -d' ' -f1)
+          CHANGELOG_ENTRY=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md \
+            | grep -v '^$' | head -3 | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+          jq --arg ver "${VERSION}-0001" \
+             --arg url "$SPK_URL" \
+             --argjson size $SPK_SIZE \
+             --arg md5 "$SPK_MD5" \
+             --arg log "$CHANGELOG_ENTRY" \
+             '.packages[0].version = $ver | .packages[0].link = $url | .packages[0].size = $size | .packages[0].md5 = $md5 | .packages[0].changelog = $log' \
+             docs/packages.json > /tmp/pkg.json.tmp && mv /tmp/pkg.json.tmp docs/packages.json
+
+      - name: Commit and push packages.json update
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add docs/packages.json
+          git commit -m "chore(pages): update packages.json for ${{ github.ref_name }} [skip ci]"
+          git push origin HEAD:master
