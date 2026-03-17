@@ -4,17 +4,23 @@
       "package": "syno-media-organizer",
       "version": "1.0.0-0001",
       "dname": "Syno Media Organizer",
-      "desc": "Organizes photos and videos into dated folders using EXIF metadata.",
+      "desc": "Automatically organizes photos and videos into dated folders (YYYY/MM) by reading EXIF metadata. Designed for Synology DS216play running DSM 7.",
       "link": "https://github.com/JordanAtDown/syno-media-organizer/releases/download/v1.0.0/syno-media-organizer-1.0.0.spk",
-      "arch": "monaco",
       "thumbnail": [],
       "snapshot": [],
+      "changelog": "First public release. Adds GitHub Pages package source for automatic updates via DSM Package Center.",
       "maintainer": "JordanAtDown",
       "maintainer_url": "https://github.com/JordanAtDown/syno-media-organizer",
+      "distributor": "JordanAtDown",
+      "distributor_url": "https://github.com/JordanAtDown/syno-media-organizer",
       "support_url": "https://github.com/JordanAtDown/syno-media-organizer/issues",
-      "changelog": "First public release. Adds GitHub Pages package source for automatic updates via DSM Package Center.",
-      "thirdparty": true,
-      "beta": false
+      "conflictpkgs": null,
+      "deppkgs": null,
+      "qinst": true,
+      "qstart": true,
+      "qupgrade": true,
+      "download_count": 0,
+      "recent_download_count": 0
     }
   ]
 }
