@@ -2,7 +2,7 @@
   "packages": [
     {
       "package": "syno-media-organizer",
-      "version": "1.0.1-0001",
+      "version": "1.0.1",
       "dname": "Syno Media Organizer",
       "desc": "Automatically organizes photos and videos into dated folders (YYYY/MM) by reading EXIF metadata. Designed for Synology DS216play running DSM 7.",
       "price": 0,

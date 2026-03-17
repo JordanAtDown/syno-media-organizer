@@ -32,7 +32,7 @@ fi
 sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "${ROOT}/Cargo.toml"
 
 # 3. Bump version in spk/INFO
-sed -i "s/^version=\".*\"/version=\"${VERSION}\"/" "${ROOT}/spk/INFO"
+sed -i "s/^version=\".*\"/version=\"${VERSION}-0001\"/" "${ROOT}/spk/INFO"
 
 # 3.5. Update docs/packages.json for GitHub Pages package source
 if ! command -v jq &> /dev/null; then
