@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-03-17
+
+### Added
+- GPG-signed SPK (`syno_signature.asc`): packages are now signed with the project's
+  GPG key so they appear and can be installed directly from DSM Package Center via the
+  custom package source without manual `.spk` download.
+- `docs/packages.json`: added `keyrings` field containing the GPG public key — DSM
+  imports it automatically when the package source is added.
+
+### Changed
+- `release.yml`: GPG private key (stored as `GPG_PRIVATE_KEY` GitHub secret) is
+  imported at build time and used to sign the SPK before publishing the GitHub Release.
+  SHA256 and MD5 are recomputed after signing.
+
+---
+
 ## [1.0.0] - 2026-03-17
 
 ### Added
