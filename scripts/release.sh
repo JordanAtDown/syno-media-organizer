@@ -34,6 +34,20 @@ sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "${ROOT}/Cargo.toml"
 # 3. Bump version in spk/INFO
 sed -i "s/^version=\".*\"/version=\"${VERSION}\"/" "${ROOT}/spk/INFO"
 
+# 3.5. Update docs/packages.json for GitHub Pages package source
+if ! command -v jq &> /dev/null; then
+    echo "ERROR: jq is required but not installed. Install it with: apt-get install jq"
+    exit 1
+fi
+SPK_URL="https://github.com/JordanAtDown/syno-media-organizer/releases/download/v${VERSION}/syno-media-organizer-${VERSION}.spk"
+CHANGELOG_ENTRY=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" "${ROOT}/CHANGELOG.md" \
+    | grep -v '^$' | head -3 | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+jq --arg ver "${VERSION}-0001" \
+   --arg url "${SPK_URL}" \
+   --arg log "${CHANGELOG_ENTRY}" \
+   '.packages[0].version = $ver | .packages[0].link = $url | .packages[0].changelog = $log' \
+   "${ROOT}/docs/packages.json" > /tmp/pkg.json.tmp && mv /tmp/pkg.json.tmp "${ROOT}/docs/packages.json"
+
 # 4. Verify CHANGELOG has an entry for this version
 if ! grep -q "## \[${VERSION}\]" "${ROOT}/CHANGELOG.md"; then
     echo "ERROR: No entry for [${VERSION}] found in CHANGELOG.md"
@@ -42,7 +56,7 @@ if ! grep -q "## \[${VERSION}\]" "${ROOT}/CHANGELOG.md"; then
 fi
 
 # 5. Commit
-git -C "${ROOT}" add Cargo.toml spk/INFO
+git -C "${ROOT}" add Cargo.toml spk/INFO docs/packages.json
 git -C "${ROOT}" commit -m "chore(release): bump version to ${VERSION}"
 
 # 6. Tag

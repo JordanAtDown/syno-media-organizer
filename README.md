@@ -64,8 +64,23 @@ every poll_interval_secs (default: 30s)
 
 ## Installation on Synology NAS
 
+### Option A — Via Package Center (recommended, enables auto-updates)
+
+1. In DSM: **Package Center → Settings → Package Sources → Add**
+   - Name: `Syno Media Organizer`
+   - URL: `https://jordanatdown.github.io/syno-media-organizer/packages.json`
+2. Click **OK**, then search for **Syno Media Organizer** in Package Center and install
+3. Future updates appear automatically in Package Center
+
+### Option B — Manual install
+
 1. Download the latest `.spk` from [Releases](https://github.com/JordanAtDown/syno-media-organizer/releases)
 2. In DSM: **Package Center → Manual Install** → select the `.spk` file
+
+---
+
+After installing (either method):
+
 3. **Grant shared folder permissions** (required — see section below)
 4. **Edit the config** via File Station:
    - Open **File Station** → shared folder `config` → `syno-media-organizer` → `config.toml`

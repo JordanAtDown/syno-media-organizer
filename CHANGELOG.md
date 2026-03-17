@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] - 2026-03-17
+
+### Added
+- GitHub Pages package source: the SPK is now installable and auto-updatable directly from
+  DSM Package Center by adding the following custom source URL:
+  `https://jordanatdown.github.io/syno-media-organizer/packages.json`
+- `docs/packages.json`: package index served via GitHub Pages — updated automatically by
+  `scripts/release.sh` on every release.
+- `scripts/release.sh` now updates `docs/packages.json` (version, SPK download link,
+  changelog excerpt) as part of the release commit.
+
+---
+
 ## [0.2.3] - 2026-03-16
 
 ### Added
