@@ -44,6 +44,18 @@ jobs:
       - name: Build SPK package
         run: bash scripts/build-spk.sh
 
+      - name: Import GPG signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: echo "$GPG_PRIVATE_KEY" | gpg --import --batch
+
+      - name: Sign SPK
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          python3 scripts/sign-spk.py "dist/syno-media-organizer-${VERSION}.spk"
+          # Recompute SHA256 after signing
+          sha256sum "dist/syno-media-organizer-${VERSION}.spk" > "dist/syno-media-organizer-${VERSION}.spk.sha256"
+
       - name: Extract release notes from CHANGELOG
         id: changelog
         run: |
