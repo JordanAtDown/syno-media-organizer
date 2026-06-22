@@ -104,6 +104,13 @@ fn scan_folder(
                     .any(|ex| ex.as_str() == c.as_os_str())
             })
         })
+        .filter(|e| {
+            // Ignore little_exif temp files created during EXIF injection.
+            e.file_name()
+                .to_str()
+                .map(|n| !n.starts_with(".syno_exif_tmp_"))
+                .unwrap_or(true)
+        })
     {
         let path = entry.path().to_path_buf();
         let mtime_secs = entry

@@ -91,6 +91,7 @@ pub fn parse_date_from_filename(path: &Path) -> Option<DateTime<Local>> {
     parse_whatsapp_date(stem)
         .or_else(|| parse_android_date(stem))
         .or_else(|| parse_facebook_date(stem))
+        .or_else(|| stem.strip_prefix("Resized_").and_then(parse_android_date))
 }
 
 /// WhatsApp: `IMG-YYYYMMDD-WAxxxx`, `VID-YYYYMMDD-WAxxxx`, `AUD-YYYYMMDD-WAxxxx`.
@@ -253,6 +254,33 @@ mod tests {
         let dt = parse_date_from_filename(path).unwrap();
         let dt_utc = dt.with_timezone(&chrono::Utc);
         assert_eq!(dt_utc.format("%Y-%m-%d").to_string(), "2017-01-17");
+    }
+
+    #[test]
+    fn test_resized_yyyymmdd_hhmmss() {
+        let path = std::path::Path::new("Resized_20210514_173457.jpg");
+        let dt = parse_date_from_filename(path).unwrap();
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2021-05-14 17:34:57"
+        );
+    }
+
+    #[test]
+    fn test_resized_with_extra_suffix() {
+        let path = std::path::Path::new("Resized_20180314_121942_119570534785744.jpg");
+        let dt = parse_date_from_filename(path).unwrap();
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2018-03-14 12:19:42"
+        );
+    }
+
+    #[test]
+    fn test_resized_screenshot_returns_none() {
+        // Resized_Screenshot_... has no parseable date prefix
+        let path = std::path::Path::new("Resized_Screenshot_20210317-095743_Instagram.jpg");
+        assert!(parse_date_from_filename(path).is_none());
     }
 
     #[test]
