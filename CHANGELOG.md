@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.3] - 2026-06-22
+
+### Fixed
+- Ignore `.syno_exif_tmp_*` temporary files created by `little_exif` during EXIF injection — the watcher no longer picks them up as new files to process.
+- Add `Resized_YYYYMMDD_HHMMSS` filename date pattern (Android photo editors) to the fallback date extraction chain.
+
+---
+
 ## [1.2.2] - 2026-06-22
 
 ### Changed
