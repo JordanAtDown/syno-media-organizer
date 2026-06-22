@@ -311,6 +311,9 @@ input = "/volume1/inbox"
 output = "/volume1/photos"
 "#,
         );
-        assert!(load(f.path()).is_err(), "invalid log_level must be rejected");
+        assert!(
+            load(f.path()).is_err(),
+            "invalid log_level must be rejected"
+        );
     }
 }

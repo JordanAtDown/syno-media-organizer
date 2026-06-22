@@ -44,7 +44,9 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
     if date_result.from_filename && matches!(ext_lower.as_str(), "jpg" | "jpeg" | "png" | "heic") {
         match crate::exif::write_exif_date(path, &date) {
             Ok(()) => debug!(path = %path.display(), "injected DateTimeOriginal from filename"),
-            Err(e) => warn!(path = %path.display(), error = %e, "failed to write EXIF date from filename"),
+            Err(e) => {
+                warn!(path = %path.display(), error = %e, "failed to write EXIF date from filename")
+            }
         }
     }
 

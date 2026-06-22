@@ -228,7 +228,10 @@ fn test_android_jpeg_has_exif_date_after_processing() {
     let moved = output_files(&output);
     let moved_path = output.path().join(&moved[0]);
     let dt = read_exif_date(&moved_path).unwrap();
-    assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2019-08-07 08:09:39");
+    assert_eq!(
+        dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+        "2019-08-07 08:09:39"
+    );
 }
 
 // --- Atomic write safety (integration) ---
@@ -325,8 +328,7 @@ fn test_multiple_whatsapp_photos_all_get_exif_injected() {
     }
 
     // Verify correct year routing for each
-    let years: std::collections::HashSet<_> =
-        files.iter().map(|f| &f[..4]).collect();
+    let years: std::collections::HashSet<_> = files.iter().map(|f| &f[..4]).collect();
     assert!(years.contains("2025"), "2025 folder expected");
     assert!(years.contains("2024"), "2024 folder expected");
     assert!(years.contains("2023"), "2023 folder expected");

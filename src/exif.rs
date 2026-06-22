@@ -20,10 +20,7 @@ pub fn write_exif_date(path: &Path, date: &DateTime<Local>) -> Result<(), ExifEr
 
     let date_str = date.format("%Y:%m:%d %H:%M:%S").to_string();
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("jpg");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("jpg");
 
     // Step 1 — create temp file in the same directory (same FS → rename is atomic).
     // NamedTempFile auto-deletes on drop if we return early before .keep().
@@ -45,9 +42,7 @@ pub fn write_exif_date(path: &Path, date: &DateTime<Local>) -> Result<(), ExifEr
 
     // Step 4 — persist temp (disable auto-delete) then atomic rename.
     // On rename failure: manual cleanup, original intact.
-    let (_, tmp_path) = tmp
-        .keep()
-        .map_err(|e| ExifError::Parse(e.to_string()))?;
+    let (_, tmp_path) = tmp.keep().map_err(|e| ExifError::Parse(e.to_string()))?;
 
     std::fs::rename(&tmp_path, path).map_err(|e| {
         let _ = std::fs::remove_file(&tmp_path);
@@ -415,8 +410,14 @@ mod tests {
         write_exif_date(&path, &date).unwrap();
 
         let content = std::fs::read(&path).unwrap();
-        assert!(content.starts_with(&[0xFF, 0xD8]), "file must remain a valid JPEG");
-        assert!(content.len() > 20, "file must be larger after EXIF injection");
+        assert!(
+            content.starts_with(&[0xFF, 0xD8]),
+            "file must remain a valid JPEG"
+        );
+        assert!(
+            content.len() > 20,
+            "file must be larger after EXIF injection"
+        );
     }
 
     #[test]
