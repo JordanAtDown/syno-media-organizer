@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-06-22
+
+### Fixed
+- Apply `cargo fmt` formatting so the CI `--check` step passes.
+
+---
+
 ## [1.2.0] - 2026-06-22
 
 ### Added
