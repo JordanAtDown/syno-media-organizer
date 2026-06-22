@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] - 2026-06-22
+
+### Changed
+- EXIF injection success is now logged at `INFO` level (was `DEBUG`), showing the injected date value. Visible with the default `log_level = "info"` setting.
+
+---
+
 ## [1.2.1] - 2026-06-22
 
 ### Fixed
