@@ -36,6 +36,10 @@ fn default_poll_interval() -> u64 {
     30
 }
 
+fn default_log_level() -> String {
+    "info".to_string()
+}
+
 fn default_empty_string() -> String {
     String::new()
 }
@@ -97,6 +101,11 @@ pub struct Config {
     /// Example: 30 = retry files without metadata once a month.
     #[serde(default)]
     pub no_date_cache_ttl_days: u32,
+    /// Minimum log level written to the log file.
+    /// Accepted values: "error", "warn", "info", "debug", "trace" (default: "info").
+    /// Overridden by the RUST_LOG environment variable or the --verbose CLI flag.
+    #[serde(default = "default_log_level")]
+    pub log_level: String,
 }
 
 pub fn load(path: &Path) -> Result<Config, ConfigError> {
@@ -121,6 +130,15 @@ fn validate(config: &Config) -> Result<(), ConfigError> {
                 "Input and output folders must differ: {}",
                 folder.input.display()
             )));
+        }
+    }
+
+    match config.log_level.as_str() {
+        "error" | "warn" | "info" | "debug" | "trace" => {}
+        other => {
+            return Err(ConfigError::Invalid(format!(
+                "log_level must be one of: error, warn, info, debug, trace — got '{other}'"
+            )))
         }
     }
 
@@ -250,5 +268,49 @@ excluded_dirs = ["@eaDir", "my-custom-dir"]
             cfg.folders[0].excluded_dirs,
             vec!["@eaDir", "my-custom-dir"]
         );
+    }
+
+    #[test]
+    fn test_log_level_defaults_to_info() {
+        let f = write_config(
+            r#"
+[[folders]]
+input = "/volume1/inbox"
+output = "/volume1/photos"
+"#,
+        );
+        let cfg = load(f.path()).unwrap();
+        assert_eq!(cfg.log_level, "info");
+    }
+
+    #[test]
+    fn test_log_level_accepted_values() {
+        for level in &["error", "warn", "info", "debug", "trace"] {
+            let f = write_config(&format!(
+                r#"
+log_level = "{level}"
+
+[[folders]]
+input = "/volume1/inbox"
+output = "/volume1/photos"
+"#
+            ));
+            let cfg = load(f.path()).unwrap_or_else(|e| panic!("level '{level}' rejected: {e}"));
+            assert_eq!(cfg.log_level, *level);
+        }
+    }
+
+    #[test]
+    fn test_log_level_invalid_is_rejected() {
+        let f = write_config(
+            r#"
+log_level = "verbose"
+
+[[folders]]
+input = "/volume1/inbox"
+output = "/volume1/photos"
+"#,
+        );
+        assert!(load(f.path()).is_err(), "invalid log_level must be rejected");
     }
 }

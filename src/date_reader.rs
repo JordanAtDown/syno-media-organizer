@@ -2,20 +2,31 @@ use crate::error::ExifError;
 use chrono::{DateTime, Local, TimeZone};
 use std::path::Path;
 
+/// Result of a date extraction — carries the date and whether it came from the filename.
+pub struct DateResult {
+    pub date: DateTime<Local>,
+    /// `true` when the date was extracted from the filename rather than file metadata.
+    /// The processor uses this to inject EXIF before moving the file.
+    pub from_filename: bool,
+}
+
 /// Abstraction over metadata-date extraction strategies.
 ///
 /// Implement this trait to support a new container format without touching
 /// the processing pipeline. `processor.rs` depends only on this trait.
 pub trait DateReader: Send + Sync {
-    fn read_date(&self, path: &Path) -> Result<DateTime<Local>, ExifError>;
+    fn read_date(&self, path: &Path) -> Result<DateResult, ExifError>;
 }
 
 /// Reads EXIF `DateTimeOriginal` (tag 0x9003) — for photos (JPEG, HEIC, PNG, TIFF…).
 pub struct ExifDateReader;
 
 impl DateReader for ExifDateReader {
-    fn read_date(&self, path: &Path) -> Result<DateTime<Local>, ExifError> {
-        crate::exif::read_exif_date(path)
+    fn read_date(&self, path: &Path) -> Result<DateResult, ExifError> {
+        crate::exif::read_exif_date(path).map(|date| DateResult {
+            date,
+            from_filename: false,
+        })
     }
 }
 
@@ -23,8 +34,11 @@ impl DateReader for ExifDateReader {
 pub struct QuickTimeDateReader;
 
 impl DateReader for QuickTimeDateReader {
-    fn read_date(&self, path: &Path) -> Result<DateTime<Local>, ExifError> {
-        crate::exif::read_quicktime_date(path)
+    fn read_date(&self, path: &Path) -> Result<DateResult, ExifError> {
+        crate::exif::read_quicktime_date(path).map(|date| DateResult {
+            date,
+            from_filename: false,
+        })
     }
 }
 
@@ -34,10 +48,16 @@ struct FallbackDateReader {
 }
 
 impl DateReader for FallbackDateReader {
-    fn read_date(&self, path: &Path) -> Result<DateTime<Local>, ExifError> {
-        self.primary
-            .read_date(path)
-            .or_else(|_| parse_date_from_filename(path).ok_or(ExifError::NoDateTimeOriginal))
+    fn read_date(&self, path: &Path) -> Result<DateResult, ExifError> {
+        match self.primary.read_date(path) {
+            Ok(result) => Ok(result),
+            Err(_) => parse_date_from_filename(path)
+                .map(|date| DateResult {
+                    date,
+                    from_filename: true,
+                })
+                .ok_or(ExifError::NoDateTimeOriginal),
+        }
     }
 }
 

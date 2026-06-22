@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-06-22
+
+### Added
+- `log_level` config option: set the minimum log level directly in `config.toml`
+  (accepted values: `"error"`, `"warn"`, `"info"`, `"debug"`, `"trace"`; default: `"info"`).
+  Priority: `RUST_LOG` env variable > `--verbose` CLI flag > `log_level` > built-in default.
+  Invalid values are rejected at startup with a clear error message.
+  3 unit tests cover default, valid values, and invalid rejection.
+
+---
+
 ## [1.1.0] - 2026-06-22
 
 ### Added

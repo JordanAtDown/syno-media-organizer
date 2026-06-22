@@ -1,8 +1,9 @@
 mod common;
 
-use common::{create_jpeg_without_exif, create_mp4_stub};
+use common::{create_jpeg_with_exif, create_jpeg_without_exif, create_mp4_stub, make_date};
 use syno_media_organizer::config::{FolderConfig, OnConflict};
 use syno_media_organizer::error::ProcessorError;
+use syno_media_organizer::exif::read_exif_date;
 use syno_media_organizer::processor::process_file;
 use tempfile::TempDir;
 
@@ -193,4 +194,140 @@ fn test_dry_run_whatsapp_no_side_effects() {
         output_files(&output).is_empty(),
         "dry-run must not create files"
     );
+}
+
+// --- EXIF injection ---
+
+#[test]
+fn test_whatsapp_jpeg_has_exif_date_after_processing() {
+    // After processing a WhatsApp JPEG, the moved file must have DateTimeOriginal in EXIF
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let file = create_jpeg_without_exif(input.path(), "IMG-20250626-WA0002.jpg");
+
+    let cfg = make_cfg(input.path().to_path_buf(), output.path().to_path_buf());
+    process_file(&file, &cfg, false).unwrap();
+
+    let moved = output_files(&output);
+    assert_eq!(moved.len(), 1);
+
+    let moved_path = output.path().join(&moved[0]);
+    let dt = read_exif_date(&moved_path).expect("moved file must have DateTimeOriginal in EXIF");
+    assert_eq!(dt.format("%Y-%m-%d").to_string(), "2025-06-26");
+}
+
+#[test]
+fn test_android_jpeg_has_exif_date_after_processing() {
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let file = create_jpeg_without_exif(input.path(), "IMG_20190807_080939.jpg");
+
+    let cfg = make_cfg(input.path().to_path_buf(), output.path().to_path_buf());
+    process_file(&file, &cfg, false).unwrap();
+
+    let moved = output_files(&output);
+    let moved_path = output.path().join(&moved[0]);
+    let dt = read_exif_date(&moved_path).unwrap();
+    assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2019-08-07 08:09:39");
+}
+
+// --- Atomic write safety (integration) ---
+
+#[test]
+fn test_no_temp_file_left_in_input_after_successful_processing() {
+    // After process_file completes, no .syno_exif_tmp_ file must remain in the input directory
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let file = create_jpeg_without_exif(input.path(), "IMG-20250626-WA0002.jpg");
+
+    let cfg = make_cfg(input.path().to_path_buf(), output.path().to_path_buf());
+    process_file(&file, &cfg, false).unwrap();
+
+    let orphans: Vec<_> = std::fs::read_dir(input.path())
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.file_name()
+                .to_string_lossy()
+                .starts_with(".syno_exif_tmp_")
+        })
+        .collect();
+    assert!(
+        orphans.is_empty(),
+        "no temp file must remain in input after processing: {:?}",
+        orphans
+    );
+}
+
+#[test]
+fn test_existing_exif_not_overwritten_by_filename_date() {
+    // A JPEG that already has DateTimeOriginal must keep its metadata date,
+    // even when its filename matches a WhatsApp pattern with a different date.
+    // 2024-03-15 in EXIF, filename suggests 2025-06-26 → EXIF must win.
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let exif_date = make_date(2024, 3, 15, 10, 30, 0);
+    // WhatsApp name → 2025-06-26, but EXIF date is 2024-03-15
+    let file = create_jpeg_with_exif(input.path(), "IMG-20250626-WA0099.jpg", exif_date);
+
+    let cfg = make_cfg(input.path().to_path_buf(), output.path().to_path_buf());
+    process_file(&file, &cfg, false).unwrap();
+
+    // File must land in 2024/03 (EXIF date), not 2025/06 (filename date)
+    let files = output_files(&output);
+    assert_eq!(files.len(), 1);
+    assert!(
+        files[0].starts_with("2024/03/"),
+        "EXIF date must take priority over filename date — got {}",
+        files[0]
+    );
+
+    // The EXIF tag in the moved file must still be the original 2024-03-15
+    let moved_path = output.path().join(&files[0]);
+    let dt = read_exif_date(&moved_path).unwrap();
+    assert_eq!(
+        dt.format("%Y-%m-%d").to_string(),
+        "2024-03-15",
+        "original EXIF date must not be overwritten"
+    );
+}
+
+#[test]
+fn test_multiple_whatsapp_photos_all_get_exif_injected() {
+    // Process 3 WhatsApp photos in sequence — each must have DateTimeOriginal in the output
+    let input = TempDir::new().unwrap();
+    let output = TempDir::new().unwrap();
+    let cfg = make_cfg(input.path().to_path_buf(), output.path().to_path_buf());
+
+    let cases = [
+        ("IMG-20250101-WA0001.jpg", "2025-01-01"),
+        ("IMG-20240615-WA0002.jpg", "2024-06-15"),
+        ("IMG-20231225-WA0003.jpg", "2023-12-25"),
+    ];
+
+    for (name, _) in &cases {
+        let file = create_jpeg_without_exif(input.path(), name);
+        process_file(&file, &cfg, false).unwrap();
+    }
+
+    let mut files = output_files(&output);
+    files.sort();
+    assert_eq!(files.len(), 3, "all 3 files must be moved");
+
+    // Verify each moved file has a readable DateTimeOriginal
+    for rel in &files {
+        let moved_path = output.path().join(rel);
+        assert!(
+            read_exif_date(&moved_path).is_ok(),
+            "{} must have DateTimeOriginal after processing",
+            rel
+        );
+    }
+
+    // Verify correct year routing for each
+    let years: std::collections::HashSet<_> =
+        files.iter().map(|f| &f[..4]).collect();
+    assert!(years.contains("2025"), "2025 folder expected");
+    assert!(years.contains("2024"), "2024 folder expected");
+    assert!(years.contains("2023"), "2023 folder expected");
 }

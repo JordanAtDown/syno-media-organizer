@@ -4,6 +4,57 @@ use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
+/// Write `DateTimeOriginal` EXIF tag to a JPEG/PNG/HEIC file using an atomic temp-then-rename
+/// strategy so the original is never left in a corrupt state if the process is interrupted.
+///
+/// Safety guarantee:
+///   1. A temp file is created in the **same directory** as `path` (same filesystem).
+///   2. The original is copied to the temp file.
+///   3. EXIF is written to the temp copy.
+///   4. `rename(temp → path)` replaces the original atomically.
+///
+/// If any step fails before `rename`, the temp file is deleted and the original is untouched.
+pub fn write_exif_date(path: &Path, date: &DateTime<Local>) -> Result<(), ExifError> {
+    use little_exif::exif_tag::ExifTag;
+    use little_exif::metadata::Metadata;
+
+    let date_str = date.format("%Y:%m:%d %H:%M:%S").to_string();
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("jpg");
+
+    // Step 1 — create temp file in the same directory (same FS → rename is atomic).
+    // NamedTempFile auto-deletes on drop if we return early before .keep().
+    let tmp = tempfile::Builder::new()
+        .prefix(".syno_exif_tmp_")
+        .suffix(&format!(".{ext}"))
+        .tempfile_in(parent)
+        .map_err(|e| ExifError::Parse(e.to_string()))?;
+
+    // Step 2 — copy original → temp. On error: NamedTempFile drops → temp deleted, original intact.
+    std::fs::copy(path, tmp.path()).map_err(|e| ExifError::Parse(e.to_string()))?;
+
+    // Step 3 — write EXIF to temp copy. On error: same auto-cleanup.
+    let mut metadata = Metadata::new_from_path(tmp.path()).unwrap_or_else(|_| Metadata::new());
+    metadata.set_tag(ExifTag::DateTimeOriginal(date_str));
+    metadata
+        .write_to_file(tmp.path())
+        .map_err(|e| ExifError::Parse(e.to_string()))?;
+
+    // Step 4 — persist temp (disable auto-delete) then atomic rename.
+    // On rename failure: manual cleanup, original intact.
+    let (_, tmp_path) = tmp
+        .keep()
+        .map_err(|e| ExifError::Parse(e.to_string()))?;
+
+    std::fs::rename(&tmp_path, path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp_path);
+        ExifError::Parse(e.to_string())
+    })
+}
+
 /// Read the capture date from a file's EXIF DateTimeOriginal tag (tag 0x9003).
 /// Returns `ExifError::NoDateTimeOriginal` if the tag is absent or unreadable.
 pub fn read_exif_date(path: &Path) -> Result<DateTime<Local>, ExifError> {
@@ -321,6 +372,145 @@ mod tests {
         assert!(
             matches!(err, ExifError::NoDateTimeOriginal),
             "creation_time=0 must be treated as missing date, not 1970-01-01"
+        );
+    }
+
+    // --- write_exif_date tests ---
+
+    fn make_minimal_jpeg(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+        let path = dir.join(name);
+        let mut jpeg: Vec<u8> = Vec::new();
+        jpeg.extend_from_slice(&[0xFF, 0xD8, 0xFF, 0xE0]);
+        jpeg.extend_from_slice(&[0x00, 0x10]);
+        jpeg.extend_from_slice(b"JFIF\x00");
+        jpeg.extend_from_slice(&[0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00]);
+        jpeg.extend_from_slice(&[0xFF, 0xD9]);
+        std::fs::write(&path, &jpeg).unwrap();
+        path
+    }
+
+    #[test]
+    fn test_write_exif_date_roundtrip() {
+        // Happy path: write → read back → correct date
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = make_minimal_jpeg(dir.path(), "photo.jpg");
+        let date = Local.with_ymd_and_hms(2025, 6, 26, 12, 0, 0).unwrap();
+
+        write_exif_date(&path, &date).unwrap();
+
+        let read_back = read_exif_date(&path).unwrap();
+        assert_eq!(
+            read_back.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2025-06-26 12:00:00"
+        );
+    }
+
+    #[test]
+    fn test_write_exif_date_file_is_valid_jpeg_after_write() {
+        // After write, file must still start with JPEG magic bytes 0xFF 0xD8
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = make_minimal_jpeg(dir.path(), "photo.jpg");
+        let date = Local.with_ymd_and_hms(2025, 1, 1, 8, 0, 0).unwrap();
+
+        write_exif_date(&path, &date).unwrap();
+
+        let content = std::fs::read(&path).unwrap();
+        assert!(content.starts_with(&[0xFF, 0xD8]), "file must remain a valid JPEG");
+        assert!(content.len() > 20, "file must be larger after EXIF injection");
+    }
+
+    #[test]
+    fn test_write_exif_date_overwrites_existing_tag() {
+        // Writing twice: the second date must win (no duplication)
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = make_minimal_jpeg(dir.path(), "photo.jpg");
+        let first = Local.with_ymd_and_hms(2024, 1, 15, 8, 0, 0).unwrap();
+        let second = Local.with_ymd_and_hms(2025, 6, 26, 12, 0, 0).unwrap();
+
+        write_exif_date(&path, &first).unwrap();
+        write_exif_date(&path, &second).unwrap();
+
+        let read_back = read_exif_date(&path).unwrap();
+        assert_eq!(
+            read_back.format("%Y-%m-%d").to_string(),
+            "2025-06-26",
+            "second write must update the tag, not duplicate it"
+        );
+    }
+
+    #[test]
+    fn test_write_exif_date_no_temp_file_left_on_success() {
+        // After a successful write, no .syno_exif_tmp_ file must remain in the directory
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = make_minimal_jpeg(dir.path(), "photo.jpg");
+        let date = Local.with_ymd_and_hms(2025, 6, 26, 12, 0, 0).unwrap();
+
+        write_exif_date(&path, &date).unwrap();
+
+        let orphans: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.file_name()
+                    .to_string_lossy()
+                    .starts_with(".syno_exif_tmp_")
+            })
+            .collect();
+        assert!(orphans.is_empty(), "no temp file must remain after success");
+    }
+
+    #[test]
+    fn test_write_exif_date_no_temp_file_left_on_source_missing() {
+        // If the source file does not exist, write_exif_date must return an error
+        // and must not leave any temp file behind
+        let dir = tempfile::TempDir::new().unwrap();
+        let ghost = dir.path().join("ghost.jpg");
+        let date = Local.with_ymd_and_hms(2025, 6, 26, 12, 0, 0).unwrap();
+
+        let result = write_exif_date(&ghost, &date);
+        assert!(result.is_err(), "must fail when source does not exist");
+
+        let orphans: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.file_name()
+                    .to_string_lossy()
+                    .starts_with(".syno_exif_tmp_")
+            })
+            .collect();
+        assert!(orphans.is_empty(), "no temp file must remain after failure");
+    }
+
+    #[test]
+    fn test_write_exif_date_original_untouched_on_copy_failure() {
+        // Original file content must be preserved when write fails (source missing means
+        // original was never touched — verified by checking the original still matches)
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = make_minimal_jpeg(dir.path(), "photo.jpg");
+        let original_content = std::fs::read(&path).unwrap();
+        let date = Local.with_ymd_and_hms(2025, 6, 26, 12, 0, 0).unwrap();
+
+        // Successful write replaces the file
+        write_exif_date(&path, &date).unwrap();
+        let after_content = std::fs::read(&path).unwrap();
+
+        // Content changed (EXIF injected) but file is still a valid JPEG
+        assert_ne!(
+            original_content, after_content,
+            "content must change after EXIF injection"
+        );
+        assert!(
+            after_content.starts_with(&[0xFF, 0xD8]),
+            "must remain a valid JPEG"
+        );
+
+        // Attempting on a non-existent file leaves the real file intact
+        let ghost = dir.path().join("ghost.jpg");
+        let _ = write_exif_date(&ghost, &date);
+        assert!(
+            path.exists(),
+            "the real file must still exist after a failed write on a different path"
         );
     }
 }

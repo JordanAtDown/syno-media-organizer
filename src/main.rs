@@ -27,8 +27,8 @@ struct Cli {
     log_format: String,
 }
 
-fn init_tracing(verbose: bool, format: &str) {
-    let level = if verbose { "debug" } else { "info" };
+fn init_tracing(verbose: bool, config_level: &str, format: &str) {
+    let level = if verbose { "debug" } else { config_level };
     let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(level));
 
@@ -45,7 +45,11 @@ fn init_tracing(verbose: bool, format: &str) {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    init_tracing(cli.verbose, &cli.log_format);
+    // Load config first so log_level can inform tracing init.
+    // Config errors surface via anyhow before tracing is up — that's intentional.
+    let cfg = config::load(&cli.config)?;
+
+    init_tracing(cli.verbose, &cfg.log_level, &cli.log_format);
 
     info!(
         version = env!("CARGO_PKG_VERSION"),
@@ -53,8 +57,6 @@ fn main() -> Result<()> {
         dry_run = cli.dry_run,
         "syno-media-organizer starting"
     );
-
-    let cfg = config::load(&cli.config)?;
 
     let cache_path = cli
         .config

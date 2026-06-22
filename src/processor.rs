@@ -4,7 +4,7 @@ use crate::error::ProcessorError;
 use crate::naming;
 use naming::is_video;
 use std::path::Path;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// Process a single file through the full pipeline:
 /// validate extension → read capture date → compute destination → create dirs → move.
@@ -26,12 +26,27 @@ pub fn process_file(path: &Path, cfg: &FolderConfig, dry_run: bool) -> Result<()
 
     // 2. Read capture date via the appropriate DateReader (EXIF for photos, QuickTime for videos)
     let reader = date_reader::for_extension(&ext_lower);
-    let date = match reader.read_date(path) {
-        Ok(dt) => dt,
-        Err(_) => {
-            return Err(ProcessorError::CaptureDataNotFound);
+    let date_result = reader
+        .read_date(path)
+        .map_err(|_| ProcessorError::CaptureDataNotFound)?;
+    let date = date_result.date;
+
+    if date_result.from_filename {
+        debug!(
+            path = %path.display(),
+            date = %date.format("%Y-%m-%d"),
+            "date extracted from filename (no metadata)"
+        );
+    }
+
+    // 2b. If date came from filename, inject EXIF DateTimeOriginal so photo apps see it.
+    //     JPEG/PNG/HEIC only — MP4 containers are not handled by little_exif. Non-fatal.
+    if date_result.from_filename && matches!(ext_lower.as_str(), "jpg" | "jpeg" | "png" | "heic") {
+        match crate::exif::write_exif_date(path, &date) {
+            Ok(()) => debug!(path = %path.display(), "injected DateTimeOriginal from filename"),
+            Err(e) => warn!(path = %path.display(), error = %e, "failed to write EXIF date from filename"),
         }
-    };
+    }
 
     // 3. Compute destination path from pattern
     let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");

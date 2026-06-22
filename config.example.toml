@@ -14,6 +14,13 @@ poll_interval_secs = 30
 # no_date_cache_enabled = true     # default: true; set false to always re-scan all files
 # no_date_cache_ttl_days = 0       # default: 0 (never expire); e.g. 30 = retry monthly
 
+# Minimum log level written to the log file.
+# Accepted values: "error", "warn", "info", "debug", "trace" (default: "info").
+# Priority (highest first): RUST_LOG env variable → --verbose CLI flag → this setting.
+# Use "debug" in production to troubleshoot file-skipping or EXIF issues.
+#
+# log_level = "info"
+
 # Each [[folders]] block defines one watched input folder.
 # You can define as many [[folders]] blocks as needed.
 

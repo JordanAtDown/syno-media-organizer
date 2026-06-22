@@ -26,6 +26,7 @@ fn single_folder_config(input: std::path::PathBuf, output: std::path::PathBuf) -
         poll_interval_secs: 1,
         no_date_cache_enabled: true,
         no_date_cache_ttl_days: 0,
+        log_level: "info".to_string(),
     }
 }
 

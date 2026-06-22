@@ -20,10 +20,11 @@ anyhow = "1"
 walkdir = "2"
 clap = { version = "4", features = ["derive"] }
 ctrlc = { version = "3", features = ["termination"] }
+little_exif = "0.6"
+tempfile = "3"
 
 [dev-dependencies]
 rstest = "0.18"
-tempfile = "3"
 
 [profile.release]
 opt-level = "s"

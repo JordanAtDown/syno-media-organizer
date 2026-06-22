@@ -195,6 +195,28 @@ rm /volume1/config/syno-media-organizer/no_date_cache.json
 The cache is also deleted automatically when the package is uninstalled from Package
 Center (your `config.toml` is preserved).
 
+### Log level
+
+Control how verbose the logs are without touching environment variables or restarting
+with a different CLI flag:
+
+```toml
+# config.toml — accepted values: "error", "warn", "info", "debug", "trace"
+log_level = "info"   # default
+```
+
+Priority (highest wins):
+
+| Source | Example |
+|--------|---------|
+| `RUST_LOG` env variable | `RUST_LOG=debug` |
+| `--verbose` CLI flag | `syno-media-organizer --verbose` |
+| `log_level` in `config.toml` | `log_level = "debug"` |
+| Built-in default | `"info"` |
+
+Use `"debug"` when troubleshooting why files are skipped or to see EXIF injection details.
+The setting takes effect on the next restart of the service.
+
 ### Pattern tokens
 
 | Token | Description |
