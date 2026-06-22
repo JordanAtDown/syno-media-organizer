@@ -20,7 +20,8 @@ CPU and memory footprint. Runs as a native Synology SPK service.
 - Polls one or more input folders every N seconds (default: 30s, configurable)
 - **Photos**: reads EXIF `DateTimeOriginal` (tag 0x9003) — JPEG, HEIC, PNG, TIFF
 - **Videos**: reads QuickTime `mvhd` creation date (UTC → local time) — MP4, MOV, AVI, MKV…
-- Files without the required metadata tag are **skipped** — no fallback, no data loss
+- **Filename fallback**: when metadata is absent, extracts date from the filename — supports WhatsApp (`IMG-YYYYMMDD-WAxxxx`), Android camera (`IMG_YYYYMMDD_HHMMSS`), and Facebook (`FB_IMG_<timestamp>`) conventions
+- Files without metadata and without a recognizable filename pattern are **skipped** — no data loss
 - Moves files to `output/YYYY/MM/` according to a configurable naming pattern
 - Handles filename conflicts: `rename`, `skip`, or `overwrite`
 - Structured JSON logging compatible with DSM log center
@@ -40,7 +41,8 @@ every poll_interval_secs (default: 30s)
      ├── validate extension
      ├── read capture date
      │     ├── photo → EXIF DateTimeOriginal (tag 0x9003)
-     │     └── video → QuickTime mvhd creation_time (UTC → local)
+     │     ├── video → QuickTime mvhd creation_time (UTC → local)
+     │     └── fallback → filename pattern (WhatsApp / Android / Facebook)
      ├── apply naming pattern
      ├── resolve conflicts
      ├── create directories

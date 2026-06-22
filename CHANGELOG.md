@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-06-22
+
+### Added
+- Filename-based date extraction as fallback when EXIF/QuickTime metadata is absent.
+  Supported patterns: WhatsApp (`IMG-YYYYMMDD-WAxxxx`, `VID-YYYYMMDD-WAxxxx`, `AUD-YYYYMMDD-WAxxxx`),
+  Android camera (`IMG_YYYYMMDD_HHMMSS`), bare camera (`YYYYMMDD_HHMMSS`),
+  and Facebook (`FB_IMG_<unix_ms>`). Covers ~94 % of previously-skipped files (WhatsApp).
+- 9 unit tests and 8 integration tests for all filename patterns and edge cases.
+
+---
+
 ## [1.0.1] - 2026-03-17
 
 ### Added
